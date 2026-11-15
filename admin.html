@@ -512,7 +512,25 @@ $('searchResults').addEventListener('click',e=>{
  searchInfo=new google.maps.InfoWindow({content:'<div style="max-width:260px"><strong>Dirección encontrada</strong><br>'+esc(x.formatted_address)+'</div>'});
  searchInfo.open({map,anchor:searchMarker});$('addressSearch').value=x.formatted_address;
 });
-$('locate').onclick=()=>{if(!navigator.geolocation){alert('Este navegador no permite geolocalización.');return}navigator.geolocation.getCurrentPosition(pos=>{map.setCenter({lat:pos.coords.latitude,lng:pos.coords.longitude});map.setZoom(16)},()=>alert('No se pudo obtener la ubicación. Revisa los permisos del navegador.'))};
+let currentLocationMarker=null,currentLocationAccuracy=null;
+$('locate').onclick=()=>{
+ if(!navigator.geolocation){alert('Este navegador no permite geolocalización.');return}
+ if(!map||!window.google||!google.maps){alert('El mapa todavía no está listo.');return}
+ const button=$('locate');button.disabled=true;button.textContent='Localizando…';
+ navigator.geolocation.getCurrentPosition(pos=>{
+  const location={lat:pos.coords.latitude,lng:pos.coords.longitude};
+  if(currentLocationMarker)currentLocationMarker.setMap(null);
+  if(currentLocationAccuracy)currentLocationAccuracy.setMap(null);
+  currentLocationAccuracy=new google.maps.Circle({map,center:location,radius:Math.max( Number(pos.coords.accuracy)||0,15),strokeColor:'#1a73e8',strokeOpacity:.45,strokeWeight:1,fillColor:'#1a73e8',fillOpacity:.10,clickable:false});
+  currentLocationMarker=new google.maps.Marker({map,position:location,title:'Tu ubicación actual',zIndex:10000,icon:{path:google.maps.SymbolPath.CIRCLE,scale:9,fillColor:'#1a73e8',fillOpacity:1,strokeColor:'#ffffff',strokeWeight:3}});
+  map.panTo(location);map.setZoom(18);
+  button.disabled=false;button.textContent='◎ Mi ubicación';
+ },err=>{
+  button.disabled=false;button.textContent='◎ Mi ubicación';
+  const messages={1:'No hay permiso para acceder a tu ubicación. Autoriza la ubicación en el navegador.',2:'No se pudo determinar tu ubicación. Comprueba el GPS o la señal.',3:'La búsqueda de ubicación tardó demasiado. Inténtalo de nuevo.'};
+  alert(messages[err.code]||'No se pudo obtener la ubicación. Revisa los permisos del navegador.');
+ },{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+};
 $('mapName').addEventListener('change',()=>{if(!ADMIN_MODE)return;state.name=$('mapName').value.trim()||'Mapa de zonas PPAM-TIJ';save();$('mapName').value=state.name});
 $('exportData').onclick=()=>{if(!ADMIN_MODE)return;const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='respaldo_mapa.json';a.click();URL.revokeObjectURL(a.href)};
 $('publishHtml').onclick=()=>{
