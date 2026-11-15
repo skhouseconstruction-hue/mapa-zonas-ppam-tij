@@ -15,10 +15,11 @@
 .brandline{display:flex;align-items:center;gap:9px;margin-top:5px}
 .brandline input{width:100%;font-size:19px;font-weight:700;color:#fff;background:transparent;border:0;border-bottom:1px solid #ffffff55;padding:4px 0;outline:none}
 .brandline input:focus{border-color:#fff}
-.tabs{display:flex;padding:10px 12px 0;gap:6px;border-bottom:1px solid var(--line)}
+.tabs{display:flex;align-items:center;flex-wrap:wrap;padding:10px 12px;gap:6px;border-bottom:1px solid var(--line)}
+.publish-tab{white-space:nowrap;font-size:11px;padding:8px 9px;flex:1 1 100%;}
 .tab{border:0;background:transparent;padding:9px 10px;color:var(--muted);font-weight:700;cursor:pointer;border-bottom:2px solid transparent}
 .tab.active{color:var(--blue);border-color:var(--blue)}
-.panel{padding:14px;overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;overscroll-behavior:contain}
+.panel{padding:14px;overflow-y:scroll;overflow-x:hidden;flex:1;min-height:0;overscroll-behavior:contain;scrollbar-gutter:stable}
 .panel::-webkit-scrollbar{width:10px}
 .panel::-webkit-scrollbar-track{background:#f1f4f9;border-radius:8px}
 .panel::-webkit-scrollbar-thumb{background:#aebbd0;border-radius:8px;border:2px solid #f1f4f9}
@@ -67,6 +68,7 @@ input:focus,textarea:focus{border-color:var(--blue)}
     <nav class="tabs">
       <button class="tab active" data-tab="zones">Zonas</button>
       <button class="tab" data-tab="about">Acerca de</button>
+      <button id="publishHtml" class="primary publish-tab" type="button">Generar URL HTML para SAFI</button>
     </nav>
     <section class="panel" id="zonesPanel">
       <div class="row between"><h3>Zonas registradas</h3><button class="primary" id="addZone">＋ Agregar zona</button></div>
@@ -81,7 +83,7 @@ input:focus,textarea:focus{border-color:var(--blue)}
       <div class="card"><strong>4. Cómo llegar</strong><p class="muted">Abre Google Maps para navegar hasta la zona seleccionada.</p></div>
       <p class="muted">Los datos se guardan en este navegador. Exporta una copia de seguridad para conservarlos o trasladarlos.</p>
       <div class="row" style="flex-wrap:wrap"><button id="exportData">Exportar respaldo</button><label class="filelabel" for="importFile">Importar respaldo</label><input id="importFile" type="file" accept="application/json" class="hidden"></div>
-      <div class="card"><strong>Publicar actualización en SAFI</strong><p class="muted">Cuando termines de agregar o modificar zonas, genera el archivo HTML actualizado desde aquí.</p><button id="publishHtml" class="primary" style="width:100%">Generar URL HTML para SAFI</button></div>
+      <div class="card"><strong>Publicación en SAFI</strong><p class="muted">Usa el botón azul que permanece visible junto a las pestañas Zonas y Acerca de para generar el mapa actualizado.</p></div>
     </section>
     <footer class="footer">Mapa base © OpenStreetMap · Rutas y ubicaciones publicadas por los administradores</footer>
   </aside>
@@ -204,7 +206,6 @@ function setTab(tab){
 }
 function configureMode(){
  $('addZone').classList.toggle('hidden',!ADMIN_MODE);
- $('publishHtml').classList.toggle('hidden',!ADMIN_MODE);
  $('mapName').readOnly=!ADMIN_MODE;
  $('mapName').style.borderBottomColor=ADMIN_MODE?'#ffffff55':'transparent';
  $('hint').textContent=ADMIN_MODE?'Modo administrador: agrega zonas y publica el HTML actualizado.':'Selecciona una zona o un marcador para consultar su fotografía, información y cómo llegar.';
