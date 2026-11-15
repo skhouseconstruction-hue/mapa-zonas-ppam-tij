@@ -39,6 +39,7 @@ input:focus,textarea:focus{border-color:var(--blue)}
 .point-actions button{font-size:11px;padding:5px 7px}
 #map{height:100%;width:100%;background:#e9eef5}
 .mapwrap{position:relative;min-width:0}
+.address-search-panel{position:absolute;z-index:650;top:14px;left:50%;transform:translateX(-50%);width:min(560px,calc(100% - 28px));padding:10px;background:#fff;border:1px solid #dbe3ef;border-radius:12px;box-shadow:0 3px 18px #172b4d2b}.address-search-panel .searchbox{display:flex;gap:8px}.address-search-panel input{min-width:0;flex:1}.address-search-panel #searchResults{max-height:34vh;overflow:auto;margin-top:6px}.address-search-panel .point{display:flex;align-items:center;gap:8px;padding:8px 2px;border-top:1px solid #edf1f6}.address-search-panel .point-info{min-width:0;flex:1}.address-search-panel .point-info span{display:block;overflow-wrap:anywhere}@media(max-width:760px){.address-search-panel{top:8px;width:calc(100% - 16px);padding:8px}.address-search-panel #searchResults{max-height:25vh}}
 .map-hint{position:absolute;z-index:400;top:14px;left:14px;transform:none;background:#fff;padding:9px 13px;border-radius:9px;box-shadow:0 2px 12px #172b4d22;max-width:min(520px,calc(100% - 28px));text-align:left;font-weight:600;line-height:1.35}
 .toolbar{position:absolute;z-index:400;right:14px;bottom:16px;top:auto;display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
 .toolbar button{box-shadow:0 2px 10px #172b4d18}\n#searchPanel{top:auto!important;bottom:64px;right:14px}
@@ -101,12 +102,11 @@ input:focus,textarea:focus{border-color:var(--blue)}
     </div>
     <div class="map-hint" id="hint">La dirección del pin aparecerá aquí cuando selecciones una ubicación.</div>
     <div class="toolbar">
-      <button id="searchToggle">⌕ Buscar dirección</button>
       <button id="locate">◎ Mi ubicación</button>
       <button id="publishHtml" class="primary hidden">Generar URL HTML para SAFI</button>
     </div>
-    <div id="searchPanel" class="card hidden" style="position:absolute;z-index:600;top:60px;right:14px;width:min(340px,calc(100% - 28px));box-shadow:0 3px 16px #172b4d22">
-      <div class="searchbox"><input id="addressSearch" type="search" placeholder="Dirección o lugar"><button class="primary" id="doSearch">Buscar</button></div>
+    <div id="searchPanel" class="card address-search-panel">
+      <div class="searchbox"><input id="addressSearch" type="search" placeholder="Buscar calle, número, colonia o código postal…"><button class="primary" id="doSearch">Buscar</button></div>
       <div id="searchResults" class="muted"></div>
     </div>
   </main>
@@ -198,7 +198,7 @@ function showSelectedStreet(coords){
  });
 }
 function initMap(){
- map=new google.maps.Map($('map'),{center:{lat:32.5149,lng:-117.0382},zoom:12,mapTypeControl:true,streetViewControl:true,fullscreenControl:true});
+ map=new google.maps.Map($('map'),{center:{lat:32.5149,lng:-117.0382},zoom:12,minZoom:3,maxZoom:21,mapTypeId:google.maps.MapTypeId.ROADMAP,mapTypeControl:true,streetViewControl:true,fullscreenControl:true,zoomControl:true});
  geocoder=new google.maps.Geocoder();
  map.addListener('click',e=>{if((adding||addingShelter)&&placementMarker){pendingCoords={lat:e.latLng.lat(),lng:e.latLng.lng()};placementMarker.setPosition(e.latLng);showSelectedStreet(pendingCoords);}});
  refresh();
@@ -467,22 +467,31 @@ function directionsToZone(p){
  const url='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.lat+','+p.lng);
  window.open(url,'_blank','noopener');
 }
-$('searchToggle').onclick=()=>$('searchPanel').classList.toggle('hidden');
+let searchMarker=null, searchInfo=null;
 async function searchAddress(){
- const q=$('addressSearch').value.trim();if(!q)return;
- $('searchResults').textContent='Buscando…';
- if(!window.google||!google.maps){$('searchResults').textContent='Conecta Google Maps con tu clave API primero.';return}
- const geocoder=new google.maps.Geocoder();
+ const q=$('addressSearch').value.trim();if(!q){$('addressSearch').focus();return}
+ $('searchResults').textContent='Buscando dirección en México…';
+ if(!window.google||!google.maps){$('searchResults').textContent='Google Maps todavía no está conectado.';return}
+ const searchGeocoder=geocoder||new google.maps.Geocoder();
  try{
-  const result=await geocoder.geocode({address:q+', Tijuana, Baja California, México'});
-  const data=result.results.slice(0,5);
-  if(!data.length){$('searchResults').textContent='No se encontraron resultados.';return}
-  $('searchResults').innerHTML=data.map((x,i)=>`<div class="point"><div class="point-info"><strong>${esc(x.address_components?.[0]?.long_name||x.formatted_address)}</strong><span class="muted">${esc(x.formatted_address)}</span></div><button data-result="${i}">Ver</button></div>`).join('');
+  const result=await searchGeocoder.geocode({address:q,region:'MX',componentRestrictions:{country:'MX'},bounds:new google.maps.LatLngBounds({lat:32.30,lng:-117.20},{lat:32.62,lng:-116.80})});
+  const data=(result.results||[]).slice(0,5);
+  if(!data.length){$('searchResults').textContent='No encontramos esa dirección. Prueba agregando número, colonia y ciudad.';return}
+  $('searchResults').innerHTML=data.map((x,i)=>`<div class="point"><div class="point-info"><strong>${esc(x.formatted_address)}</strong><span class="muted">${esc(x.types?.join(', ')||'Dirección')}</span></div><button data-result="${i}">Ir</button></div>`).join('');
   $('searchResults')._results=data;
- }catch(e){$('searchResults').textContent='No se pudo buscar. Revisa que Geocoding esté disponible para tu proyecto o intenta otra dirección.'}
+ }catch(e){$('searchResults').textContent='No se pudo completar la búsqueda. Verifica que Geocoding API esté habilitada para la clave de Google Maps.'}
 }
 $('doSearch').onclick=searchAddress;$('addressSearch').addEventListener('keydown',e=>{if(e.key==='Enter')searchAddress()});
-$('searchResults').addEventListener('click',e=>{const b=e.target.closest('button[data-result]');if(!b)return;const x=$('searchResults')._results[Number(b.dataset.result)];map.setCenter(x.geometry.location);map.setZoom(16);new google.maps.InfoWindow({content:esc(x.formatted_address),position:x.geometry.location}).open(map)});
+$('searchResults').addEventListener('click',e=>{
+ const b=e.target.closest('button[data-result]');if(!b)return;
+ const x=$('searchResults')._results[Number(b.dataset.result)];if(!x||!x.geometry)return;
+ map.setCenter(x.geometry.location);map.setZoom(19);
+ if(searchMarker)searchMarker.setMap(null);
+ searchMarker=new google.maps.Marker({map,position:x.geometry.location,title:x.formatted_address,animation:google.maps.Animation.DROP});
+ if(searchInfo)searchInfo.close();
+ searchInfo=new google.maps.InfoWindow({content:'<div style="max-width:260px"><strong>Dirección encontrada</strong><br>'+esc(x.formatted_address)+'</div>'});
+ searchInfo.open({map,anchor:searchMarker});$('addressSearch').value=x.formatted_address;
+});
 $('locate').onclick=()=>{if(!navigator.geolocation){alert('Este navegador no permite geolocalización.');return}navigator.geolocation.getCurrentPosition(pos=>{map.setCenter({lat:pos.coords.latitude,lng:pos.coords.longitude});map.setZoom(16)},()=>alert('No se pudo obtener la ubicación. Revisa los permisos del navegador.'))};
 $('mapName').addEventListener('change',()=>{if(!ADMIN_MODE)return;state.name=$('mapName').value.trim()||'Mapa de zonas PPAM-TIJ';save();$('mapName').value=state.name});
 $('exportData').onclick=()=>{if(!ADMIN_MODE)return;const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='respaldo_mapa.json';a.click();URL.revokeObjectURL(a.href)};
