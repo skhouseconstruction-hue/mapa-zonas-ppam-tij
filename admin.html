@@ -18,7 +18,11 @@
 .tabs{display:flex;padding:10px 12px 0;gap:6px;border-bottom:1px solid var(--line)}
 .tab{border:0;background:transparent;padding:9px 10px;color:var(--muted);font-weight:700;cursor:pointer;border-bottom:2px solid transparent}
 .tab.active{color:var(--blue);border-color:var(--blue)}
-.panel{padding:14px;overflow:auto;flex:1}
+.panel{padding:14px;overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;overscroll-behavior:contain}
+.panel::-webkit-scrollbar{width:10px}
+.panel::-webkit-scrollbar-track{background:#f1f4f9;border-radius:8px}
+.panel::-webkit-scrollbar-thumb{background:#aebbd0;border-radius:8px;border:2px solid #f1f4f9}
+.panel{scrollbar-width:thin;scrollbar-color:#aebbd0 #f1f4f9}
 .row{display:flex;align-items:center;gap:8px}.between{justify-content:space-between}
 h3{margin:2px 0 10px;font-size:15px}
 .muted{color:var(--muted);font-size:12px}
@@ -77,6 +81,7 @@ input:focus,textarea:focus{border-color:var(--blue)}
       <div class="card"><strong>4. Cómo llegar</strong><p class="muted">Abre Google Maps para navegar hasta la zona seleccionada.</p></div>
       <p class="muted">Los datos se guardan en este navegador. Exporta una copia de seguridad para conservarlos o trasladarlos.</p>
       <div class="row" style="flex-wrap:wrap"><button id="exportData">Exportar respaldo</button><label class="filelabel" for="importFile">Importar respaldo</label><input id="importFile" type="file" accept="application/json" class="hidden"></div>
+      <div class="card"><strong>Publicar actualización en SAFI</strong><p class="muted">Cuando termines de agregar o modificar zonas, genera el archivo HTML actualizado desde aquí.</p><button id="publishHtml" class="primary" style="width:100%">Generar URL HTML para SAFI</button></div>
     </section>
     <footer class="footer">Mapa base © OpenStreetMap · Rutas y ubicaciones publicadas por los administradores</footer>
   </aside>
@@ -96,7 +101,7 @@ input:focus,textarea:focus{border-color:var(--blue)}
     <div class="toolbar">
       <button id="searchToggle">⌕ Buscar dirección</button>
       <button id="locate">◎ Mi ubicación</button>
-      <button id="publishHtml" class="primary hidden">Generar URL HTML para SAFI</button>
+      
     </div>
     <div id="searchPanel" class="card hidden" style="position:absolute;z-index:600;top:60px;right:14px;width:min(340px,calc(100% - 28px));box-shadow:0 3px 16px #172b4d22">
       <div class="searchbox"><input id="addressSearch" type="search" placeholder="Dirección o lugar"><button class="primary" id="doSearch">Buscar</button></div>
