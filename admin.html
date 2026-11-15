@@ -17,7 +17,7 @@
 :root{--navy:#172b4d;--blue:#2563eb;--bg:#f3f6fb;--line:#e5eaf2;--muted:#64748b}
 *{box-sizing:border-box}body{margin:0;font:14px/1.45 Arial,sans-serif;background:var(--bg);color:#172033}
 .app{height:100vh;height:100dvh;min-height:0;display:grid;grid-template-columns:350px 1fr;overflow:hidden}
-.sidebar{background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0;z-index:500}
+.sidebar{background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0;min-height:0;height:100%;z-index:500}
 .brand{padding:18px 18px 14px;background:var(--navy);color:#fff}
 .brand small{opacity:.75;display:block;letter-spacing:.08em;text-transform:uppercase;font-size:10px}
 .brandline{display:flex;align-items:center;gap:9px;margin-top:5px}
@@ -30,11 +30,12 @@
 .publish-tab{white-space:nowrap;font-size:11px;padding:8px 9px;flex:1 1 100%;}
 .tab{border:0;background:transparent;padding:9px 10px;color:var(--muted);font-weight:700;cursor:pointer;border-bottom:2px solid transparent}
 .tab.active{color:var(--blue);border-color:var(--blue)}
-.panel{padding:14px;overflow-y:scroll;overflow-x:hidden;flex:1;min-height:0;overscroll-behavior:contain;scrollbar-gutter:stable}
-.panel::-webkit-scrollbar{width:10px}
+.panel{padding:14px;display:block;flex:1 1 0%;height:0;min-height:0;max-height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-gutter:stable;scrollbar-width:auto;scrollbar-color:#94a3b8 #f1f4f9}
+.panel::-webkit-scrollbar{width:12px}
 .panel::-webkit-scrollbar-track{background:#f1f4f9;border-radius:8px}
-.panel::-webkit-scrollbar-thumb{background:#aebbd0;border-radius:8px;border:2px solid #f1f4f9}
-.panel{scrollbar-width:thin;scrollbar-color:#aebbd0 #f1f4f9}
+.panel::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:8px;border:2px solid #f1f4f9;min-height:36px}
+.panel:focus{outline:2px solid #93b4ff;outline-offset:-2px}
+#zonesPanel,#aboutPanel{overscroll-behavior:contain}
 .row{display:flex;align-items:center;gap:8px}.between{justify-content:space-between}
 h3{margin:2px 0 10px;font-size:15px}
 .muted{color:var(--muted);font-size:12px}
@@ -66,7 +67,7 @@ input:focus,textarea:focus{border-color:var(--blue)}
 .preview{width:100%;max-height:170px;object-fit:cover;border-radius:8px;margin-top:8px}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 .footer{padding:10px 14px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
-@media(max-width:760px){.app{grid-template-columns:1fr;grid-template-rows:minmax(220px,46dvh) minmax(0,1fr)}.mapwrap{grid-row:1}.sidebar{grid-row:2;border-right:0;border-top:1px solid var(--line)}.brand{padding:9px 14px}.brandline input{font-size:16px}.brand-tools{margin-top:6px}.tabs{padding-top:4px}.panel{padding:10px}.map-hint{top:58px}.toolbar{top:auto;bottom:10px;right:10px}.toolbar button{padding:7px;font-size:12px}#searchPanel{top:auto!important;bottom:58px;right:10px}}
+@media(max-width:760px){.app{grid-template-columns:1fr;grid-template-rows:minmax(220px,46dvh) minmax(0,1fr)}.sidebar{height:100%;min-height:0}.panel{height:0;min-height:0;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch}.mapwrap{grid-row:1}.sidebar{grid-row:2;border-right:0;border-top:1px solid var(--line)}.brand{padding:9px 14px}.brandline input{font-size:16px}.brand-tools{margin-top:6px}.tabs{padding-top:4px}.panel{padding:10px}.map-hint{top:58px}.toolbar{top:auto;bottom:10px;right:10px}.toolbar button{padding:7px;font-size:12px}#searchPanel{top:auto!important;bottom:58px;right:10px}}
 </style>
 </head>
 <body>
@@ -82,12 +83,12 @@ input:focus,textarea:focus{border-color:var(--blue)}
       <button class="tab" data-tab="about">Acerca de</button>
       <button id="publishHtml" class="primary publish-tab" type="button">Generar URL HTML para SAFI</button>
     </nav>
-    <section class="panel" id="zonesPanel">
+    <section class="panel" id="zonesPanel" tabindex="0" aria-label="Lista de zonas; usa la rueda, la barra o las flechas para desplazarte">
       <div class="row between"><h3>Zonas registradas</h3><button class="primary" id="addZone">＋ Agregar zona</button></div>
       <div class="muted">Aquí aparecerán todas las zonas que registres. Selecciona una para verla en el mapa.</div>
       <div id="zonesList"></div>
     </section>
-    <section class="panel hidden" id="aboutPanel">
+    <section class="panel hidden" id="aboutPanel" tabindex="0" aria-label="Información del mapa; usa la rueda, la barra o las flechas para desplazarte">
       <h3>Cómo usar el mapa</h3>
       <div class="card"><strong>1. Agrega una zona</strong><p class="muted">Pulsa “Agregar zona”, mueve el pin al lugar exacto y confirma la ubicación.</p></div>
       <div class="card"><strong>2. Completa su ficha</strong><p class="muted">Escribe el nombre, una descripción y agrega una fotografía.</p></div>
