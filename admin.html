@@ -139,8 +139,6 @@ input:focus,textarea:focus{border-color:var(--blue)}
     <div class="field"><label for="pointDesc">Descripción</label><textarea id="pointDesc" rows="3" placeholder="Información para identificar esta zona"></textarea></div>
     <div class="field"><label for="pointNote">Nota de referencia</label><textarea id="pointNote" rows="2" placeholder="Ej. Frente a la entrada principal, junto al estacionamiento..."></textarea></div>
     <div class="field"><label for="pointPhoto">Fotografía de la zona</label><input id="pointPhoto" type="file" accept="image/*"><img id="photoPreview" class="preview hidden" alt="Vista previa"></div>
-    <div class="field"><label for="pointContact">Contacto del resguardo</label><input id="pointContact" type="text" placeholder="Nombre de la persona responsable"></div>
-    <div class="field"><label for="pointPhone">Teléfono de contacto</label><input id="pointPhone" type="text" inputmode="tel" placeholder="Teléfono"></div>
     <div class="muted" id="coordText"></div>
     <div class="modal-actions"><button id="cancelModal">Cancelar</button><button class="primary" id="savePoint">Guardar punto</button></div>
   </div>
@@ -204,7 +202,7 @@ function showSelectedStreet(coords){
  $('hint').textContent='Buscando la dirección del pin…';
  if(!geocoder){$('hint').textContent='Ubicación seleccionada. Activa Geocoding para mostrar el nombre de la calle.';return}
  geocoder.geocode({location:coords},(results,status)=>{
-  if(requestId!==geocodeRequest || !adding)return;
+  if(requestId!==geocodeRequest || (!adding&&!addingShelter))return;
   if(status==='OK' && results && results.length){
    const components=results[0].address_components||[];
    const get=t=>components.find(c=>c.types.includes(t))?.long_name||'';
@@ -222,7 +220,7 @@ function showSelectedStreet(coords){
 function initMap(){
  map=new google.maps.Map($('map'),{center:{lat:32.5149,lng:-117.0382},zoom:12,mapTypeControl:true,streetViewControl:true,fullscreenControl:true});
  geocoder=new google.maps.Geocoder();
- map.addListener('click',e=>{if(adding&&placementMarker){pendingCoords={lat:e.latLng.lat(),lng:e.latLng.lng()};placementMarker.setPosition(e.latLng);showSelectedStreet(pendingCoords);}});
+ map.addListener('click',e=>{if((adding||addingShelter)&&placementMarker){pendingCoords={lat:e.latLng.lat(),lng:e.latLng.lng()};placementMarker.setPosition(e.latLng);showSelectedStreet(pendingCoords);}});
  refresh();
  $('apiSetup').classList.add('hidden');
 }
@@ -315,7 +313,7 @@ function refresh(){ $('mapName').value=state.name;renderZones();renderShelters()
 function openPointModal(p=null){
  editingId=p?.id||null;photoData=p?.photo||null;
  $('modalTitle').textContent=p?'Editar zona':'Nueva zona';
- $('pointName').value=p?.name||'';$('pointDesc').value=p?.description||'';$('pointNote').value=p?.note||'';$('pointContact').value=p?.contact||'';$('pointPhone').value=p?.phone||'';
+ $('pointName').value=p?.name||'';$('pointDesc').value=p?.description||'';$('pointNote').value=p?.note||'';
  $('coordText').textContent=p?`Coordenadas: ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`:`Coordenadas: ${pendingCoords.lat.toFixed(6)}, ${pendingCoords.lng.toFixed(6)}`;
  $('pointPhoto').value='';$('photoPreview').src=photoData||'';$('photoPreview').classList.toggle('hidden',!photoData);
  $('modalBack').classList.remove('hidden');
@@ -350,12 +348,12 @@ $('cancelModal').onclick=()=>{
 $('savePoint').onclick=()=>{
  if(!ADMIN_MODE)return;
  const name=$('pointName').value.trim();if(!name){alert('Escribe el nombre de la zona.');return}
- if(editingId){const p=state.points.find(x=>x.id===editingId);if(p){p.name=name;p.description=$('pointDesc').value.trim();p.note=$('pointNote').value.trim();p.photo=photoData;p.contact=$('pointContact').value.trim();p.phone=$('pointPhone').value.trim()}}
+ if(editingId){const p=state.points.find(x=>x.id===editingId);if(p){p.name=name;p.description=$('pointDesc').value.trim();p.note=$('pointNote').value.trim();p.photo=photoData}}
  else {
   // Toma la posición final real del marcador de Google Maps antes de guardar.
   const finalPosition=placementMarker ? placementMarker.getPosition() : null;
   if(finalPosition) pendingCoords={lat:finalPosition.lat(),lng:finalPosition.lng()};
-  state.points.push({id:uid(),routeId:null,name,description:$('pointDesc').value.trim(),note:$('pointNote').value.trim(),photo:photoData,contact:$('pointContact').value.trim(),phone:$('pointPhone').value.trim(),lat:pendingCoords.lat,lng:pendingCoords.lng});
+  state.points.push({id:uid(),routeId:null,name,description:$('pointDesc').value.trim(),note:$('pointNote').value.trim(),photo:photoData,lat:pendingCoords.lat,lng:pendingCoords.lng});
  }
  save();closeModal();
  if(placementMarker){placementMarker.setMap(null);placementMarker=null;}
