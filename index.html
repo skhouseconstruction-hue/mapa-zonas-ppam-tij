@@ -137,7 +137,7 @@ input:focus,textarea:focus{border-color:var(--blue)}
     <div class="field"><label for="shelterDesc">Descripción / dirección</label><textarea id="shelterDesc" rows="3" placeholder="La dirección se completará al seleccionar el pin; puedes editarla."></textarea></div>
     <div class="field"><label for="shelterPhoto">Fotografía del resguardo</label><input id="shelterPhoto" type="file" accept="image/*"><img id="shelterPhotoPreview" class="preview hidden" alt="Vista previa del resguardo"></div>
     <div class="field"><label for="shelterContact">Contacto del resguardo</label><input id="shelterContact" type="text" placeholder="Nombre de la persona responsable"></div>
-    <div class="field"><label for="shelterPhone">Teléfono de contacto</label><input id="shelterPhone" type="text" inputmode="tel" placeholder="Teléfono"></div>
+    <div class="field"><label for="shelterPhone">Teléfono de contacto</label><input id="shelterPhone" type="text" inputmode="tel" placeholder="Teléfono"></div><div class="field"><label for="shelterNote">Nota / referencia</label><textarea id="shelterNote" rows="3" placeholder="Agrega indicaciones o referencias para identificar el resguardo."></textarea></div>
     <div class="muted" id="shelterCoordText"></div>
     <div class="modal-actions"><button id="cancelShelter">Cancelar</button><button class="primary" id="saveShelter">Guardar resguardo</button></div>
   </div>
@@ -270,7 +270,7 @@ function renderShelters(){
     <div class="route-title">${esc(p.name)}</div>
     <div class="muted">${esc(p.description||'Sin dirección')}</div>
     ${p.contact?'<div class="muted"><strong>Contacto:</strong> '+esc(p.contact)+'</div>':''}
-    ${p.phone?'<div class="muted"><strong>Teléfono:</strong> '+esc(p.phone)+'</div>':''}
+    ${p.phone?'<div class="muted"><strong>Teléfono:</strong> '+esc(p.phone)+'</div>':''}${p.note?`<div class="muted" style="margin-top:5px"><strong>Nota / referencia:</strong> ${esc(p.note)}</div>`:''}
    </div>
   </div>
   <div class="point-actions">
@@ -306,7 +306,7 @@ function renderMarkers(){
    label:{text:String(p.name||''),color:'#9333ea',fontSize:'16px',fontWeight:'900'}
   });
   const navUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.lat+','+p.lng);
-  const info=new google.maps.InfoWindow({content:`<div style="min-width:170px;max-width:240px"><strong>${esc(p.name)}</strong>${p.photo?`<br><img src="${p.photo}" style="width:100%;max-height:140px;object-fit:cover;border-radius:6px;margin:6px 0">`:''}<div>${esc(p.description||'')}</div>${p.contact?'<div><strong>Contacto:</strong> '+esc(p.contact)+'</div>':''}${p.phone?'<div><strong>Teléfono:</strong> '+esc(p.phone)+'</div>':''}<br><a href="${navUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;background:#2563eb;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-weight:bold">Cómo llegar</a></div>`});
+  const info=new google.maps.InfoWindow({content:`<div style="min-width:170px;max-width:240px"><strong>${esc(p.name)}</strong>${p.photo?`<br><img src="${p.photo}" style="width:100%;max-height:140px;object-fit:cover;border-radius:6px;margin:6px 0">`:''}<div>${esc(p.description||'')}</div>${p.contact?'<div><strong>Contacto:</strong> '+esc(p.contact)+'</div>':''}${p.phone?'<div><strong>Teléfono:</strong> '+esc(p.phone)+'</div>':''}${p.note?`<div style="margin-top:6px"><strong>Nota / referencia:</strong> ${esc(p.note)}</div>`:''}<br><a href="${navUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;background:#2563eb;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-weight:bold">Cómo llegar</a></div>`});
   marker.addListener('click',()=>info.open({map,anchor:marker}));
   markers['shelter_'+p.id]=marker;
  });
@@ -407,7 +407,7 @@ function openShelterModal(p=null){
  editingShelterId=p?.id||null;shelterPhotoData=p?.photo||null;
  $('shelterModalTitle').textContent=p?'Editar resguardo':'Nuevo resguardo de exhibidores';
  $('shelterName').value=p?.name||'';$('shelterDesc').value=p?.description||'';
- $('shelterContact').value=p?.contact||'';$('shelterPhone').value=p?.phone||'';
+ $('shelterContact').value=p?.contact||'';$('shelterPhone').value=p?.phone||'';$('shelterNote').value=p?.note||'';
  $('shelterPhoto').value='';$('shelterPhotoPreview').src=shelterPhotoData||'';
  $('shelterPhotoPreview').classList.toggle('hidden',!shelterPhotoData);
  $('shelterCoordText').textContent=p?`Coordenadas: ${Number(p.lat).toFixed(6)}, ${Number(p.lng).toFixed(6)}`:`Coordenadas: ${pendingCoords.lat.toFixed(6)}, ${pendingCoords.lng.toFixed(6)}`;
@@ -445,11 +445,11 @@ $('cancelShelter').onclick=()=>{addingShelter=false;if(placementMarker){placemen
 $('saveShelter').onclick=()=>{
  if(!ADMIN_MODE)return;
  const name=$('shelterName').value.trim();if(!name){alert('Escribe el nombre del resguardo.');return}
- if(editingShelterId){const p=(state.shelters||[]).find(x=>x.id===editingShelterId);if(p){p.name=name;p.description=$('shelterDesc').value.trim();p.photo=shelterPhotoData;p.contact=$('shelterContact').value.trim();p.phone=$('shelterPhone').value.trim();}}
+ if(editingShelterId){const p=(state.shelters||[]).find(x=>x.id===editingShelterId);if(p){p.name=name;p.description=$('shelterDesc').value.trim();p.photo=shelterPhotoData;p.contact=$('shelterContact').value.trim();p.phone=$('shelterPhone').value.trim();p.note=$('shelterNote').value.trim();}}
  else{
   const pos=placementMarker?placementMarker.getPosition():null;if(pos)pendingCoords={lat:pos.lat(),lng:pos.lng()};
   if(!pendingCoords){alert('Selecciona una ubicación en el mapa.');return}
-  state.shelters.push({id:uid(),name,description:$('shelterDesc').value.trim(),photo:shelterPhotoData,contact:$('shelterContact').value.trim(),phone:$('shelterPhone').value.trim(),lat:pendingCoords.lat,lng:pendingCoords.lng});
+  state.shelters.push({id:uid(),name,description:$('shelterDesc').value.trim(),photo:shelterPhotoData,contact:$('shelterContact').value.trim(),phone:$('shelterPhone').value.trim(),note:$('shelterNote').value.trim(),lat:pendingCoords.lat,lng:pendingCoords.lng});
  }
  save();$('shelterModalBack').classList.add('hidden');if(placementMarker){placementMarker.setMap(null);placementMarker=null;}pendingCoords=null;
  $('addShelter').textContent='＋ Agregar resguardo';refresh();setTab('shelters');$('hint').textContent='Resguardo guardado. Selecciona su marcador para consultar los datos.';
