@@ -302,7 +302,7 @@ function renderMarkers(){
   const marker=new google.maps.Marker({
    position:{lat:Number(p.lat),lng:Number(p.lng)},map,title:p.name,
    icon:namedPinIcon('#dc2626','#991b1b'),
-   label:{text:String(p.name||''),color:'#172033',fontSize:'12px',fontWeight:'700'}
+   label:{text:String(p.name||''),color:'#dc2626',fontSize:'16px',fontWeight:'900'}
   });
   const navUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.lat+','+p.lng);
   const info=new google.maps.InfoWindow({content:`<div style="min-width:170px;max-width:240px"><strong>${esc(p.name)}</strong>${p.photo?`<br><img src="${p.photo}" style="width:100%;max-height:140px;object-fit:cover;border-radius:6px;margin:6px 0">`:''}<div>${esc(p.description||'')}</div>${p.note?`<div style="margin-top:6px"><strong>Referencia:</strong> ${esc(p.note)}</div>`:''}<br><a href="${navUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;background:#2563eb;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-weight:bold">Cómo llegar</a></div>`});
@@ -313,7 +313,7 @@ function renderMarkers(){
   const marker=new google.maps.Marker({
    position:{lat:Number(p.lat),lng:Number(p.lng)},map,title:p.name,
    icon:namedPinIcon('#9333ea','#6b21a8'),
-   label:{text:String(p.name||''),color:'#581c87',fontSize:'12px',fontWeight:'700'}
+   label:{text:String(p.name||''),color:'#9333ea',fontSize:'16px',fontWeight:'900'}
   });
   const navUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.lat+','+p.lng);
   const info=new google.maps.InfoWindow({content:`<div style="min-width:170px;max-width:240px"><strong>${esc(p.name)}</strong>${p.photo?`<br><img src="${p.photo}" style="width:100%;max-height:140px;object-fit:cover;border-radius:6px;margin:6px 0">`:''}<div>${esc(p.description||'')}</div>${p.contact?'<div><strong>Contacto:</strong> '+esc(p.contact)+'</div>':''}${p.phone?'<div><strong>Teléfono:</strong> '+esc(p.phone)+'</div>':''}<br><a href="${navUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;background:#2563eb;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-weight:bold">Cómo llegar</a></div>`});
