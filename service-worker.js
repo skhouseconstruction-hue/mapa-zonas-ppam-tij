@@ -1,6 +1,6 @@
 'use strict';
-const CACHE_NAME='ppam-tij-admin-v3';
-const APP_FILES=['./admin.html','./manifest.webmanifest','./icon-192.svg','./icon-512.svg'];
+const CACHE_NAME='ppam-tij-admin-v4';
+const APP_FILES=['./admin.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-192.svg','./icon-512.svg'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_FILES)).then(()=>self.skipWaiting()));
 });
