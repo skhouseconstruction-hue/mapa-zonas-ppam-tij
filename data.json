@@ -17,6 +17,16 @@
       "lat": 32.52985591490416,
       "lng": -116.96759385305897,
       "note": "se puede poner exhibidores en ambos lados del puente si el personal lo permite"
+    },
+    {
+      "id": "mwir26m5g962y",
+      "routeId": null,
+      "name": "Zona 1 Malecon",
+      "description": "Avenida Del Pacifico 497",
+      "note": "",
+      "photo": null,
+      "lat": 32.531066562489215,
+      "lng": -117.12315559400777
     }
   ],
   "shelters": [],
