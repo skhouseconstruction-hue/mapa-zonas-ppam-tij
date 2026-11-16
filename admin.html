@@ -722,7 +722,7 @@ $('addShelter').onclick=()=>{if(ADMIN_MODE)startAddingShelter()};
 $('removeShelterPhoto').onclick=()=>{shelterPhotoData=null;$('shelterPhoto').value='';$('shelterPhotoPreview').src='';$('shelterPhotoPreview').classList.add('hidden');$('removeShelterPhoto').classList.add('hidden')};
 $('cancelShelter').onclick=()=>{addingShelter=false;editingShelterId=null;pickingRecordLocation=null;$('zonePickerPin').classList.add('hidden');$('zonePickerActions').classList.add('hidden');if(placementMarker){placementMarker.setMap(null);placementMarker=null;}pendingCoords=null;$('shelterModalBack').classList.add('hidden');$('addShelter').textContent='＋ Agregar resguardo';map?.setOptions({draggableCursor:null});};
 $('selectShelterLocation').onclick=()=>beginRecordLocationPick('shelter');
-$('correctShelterLocation').onclick=()=>{if(!ADMIN_MODE)return;if(!editingShelterId){alert('Abre el resguardo con el botón Editar antes de corregir su ubicación.');return;}startLocationChange('shelter',editingShelterId);};
+$('correctShelterLocation').onclick=()=>{if(!ADMIN_MODE)return;if(!editingShelterId){alert('Abre el resguardo con el botón Editar antes de corregir su ubicación.');return;}beginRecordLocationPick('shelter');};
 $('saveShelter').onclick=()=>{
  if(!ADMIN_MODE)return;
  const name=$('shelterName').value.trim();if(!name){alert('Escribe el nombre del resguardo.');return}
