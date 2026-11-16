@@ -531,7 +531,7 @@ $('cropFrame').addEventListener('pointermove',e=>{
 function stopCropPointer(e){if(cropPointer&&e.pointerId===cropPointer.id)cropPointer=null;}
 $('cropFrame').addEventListener('pointerup',stopCropPointer);
 $('cropFrame').addEventListener('pointercancel',stopCropPointer);
-$('cancelCrop').onclick=()=>{$('captureEditor').classList.add('hidden');$('capturePicker').value='';cropSourceImage=null;cropBox=null;};
+$('cancelCrop').onclick=()=>{$('captureEditor').classList.add('hidden');$('capturePicker').value='';$('photoPreview').classList.toggle('hidden',!photoData);cropSourceImage=null;cropBox=null;};
 $('useCrop').onclick=()=>{
  if(!cropSourceImage||!cropBox)return;
  const scaleX=cropSourceImage.naturalWidth/$('cropStage').clientWidth,scaleY=cropSourceImage.naturalHeight/$('cropStage').clientHeight;
@@ -540,7 +540,9 @@ $('useCrop').onclick=()=>{
  const canvas=document.createElement('canvas'),limit=1800,ratio=Math.min(1,limit/Math.max(sw,sh));
  canvas.width=Math.max(1,Math.round(sw*ratio));canvas.height=Math.max(1,Math.round(sh*ratio));
  const ctx=canvas.getContext('2d');ctx.drawImage(cropSourceImage,sx,sy,sw,sh,0,0,canvas.width,canvas.height);
- photoData=canvas.toDataURL('image/jpeg',.86);
+ const croppedImage=canvas.toDataURL('image/jpeg',.86);
+ if(!confirm('¿Quieres utilizar este recorte como fotografía de la zona?'))return;
+ photoData=croppedImage;
  $('photoPreview').src=photoData;$('photoPreview').classList.remove('hidden');
  $('captureEditor').classList.add('hidden');$('capturePicker').value='';cropSourceImage=null;cropBox=null;
 };
