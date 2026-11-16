@@ -27,6 +27,16 @@
       "photo": null,
       "lat": 32.531066562489215,
       "lng": -117.12315559400777
+    },
+    {
+      "id": "mwiumcq4exyw5",
+      "routeId": null,
+      "name": "prueba 1",
+      "description": "Avenida Del Pacifico 497",
+      "note": "frente asix",
+      "photo": null,
+      "lat": 32.531066562489215,
+      "lng": -117.12315559400777
     }
   ],
   "shelters": [],
