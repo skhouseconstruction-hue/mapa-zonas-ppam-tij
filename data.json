@@ -317,6 +317,16 @@
       "photo": null,
       "lat": null,
       "lng": null
+    },
+    {
+      "id": "mwiyfqvlt1wbg",
+      "routeId": null,
+      "name": "Plaza Sendero (pendiente)",
+      "description": "",
+      "note": "",
+      "photo": null,
+      "lat": null,
+      "lng": null
     }
   ],
   "shelters": [
