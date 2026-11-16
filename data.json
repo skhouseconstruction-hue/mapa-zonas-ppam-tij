@@ -342,15 +342,5 @@
       "lng": -117.12358474745015
     }
   ],
-  "events": [
-    {
-      "id": "mwiyi3nvi83rq",
-      "name": "reuniones",
-      "address": "J42M+FM San Diego, California, EE. UU.",
-      "notes": "",
-      "photo": null,
-      "lat": 32.601131810062626,
-      "lng": -116.86585197753907
-    }
-  ]
+  "events": []
 }
