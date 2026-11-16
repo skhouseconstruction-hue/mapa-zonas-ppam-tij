@@ -668,7 +668,7 @@ function openMapCropper(sourceUrl, center){
  document.body.appendChild(overlay);
  const img=overlay.querySelector('#cropSource'),stage=overlay.querySelector('#cropStage'),rect=overlay.querySelector('#cropRect');
  let box=null,drag=false,origin=null,display=null;
- img.onload=()=>{const ir=img.getBoundingClientRect(),sr=stage.getBoundingClientRect();display={left:ir.left-sr.left,top:ir.top-sr.top,width:ir.width,height:ir.height};};
+ img.onload=()=>{const ir=img.getBoundingClientRect(),sr=stage.getBoundingClientRect();display={left:ir.left-sr.left,top:ir.top-sr.top,width:ir.width,height:ir.height};if(img.src.startsWith('blob:'))URL.revokeObjectURL(img.src);};
  img.src=sourceUrl;
  const point=e=>{const r=stage.getBoundingClientRect();return{x:Math.max(display.left,Math.min(display.left+display.width,e.clientX-r.left)),y:Math.max(display.top,Math.min(display.top+display.height,e.clientY-r.top))};};
  stage.addEventListener('pointerdown',e=>{if(!display)return;stage.setPointerCapture(e.pointerId);origin=point(e);box={x:origin.x,y:origin.y,w:0,h:0};drag=true;rect.style.display='block';});
@@ -688,38 +688,20 @@ function openMapCropper(sourceUrl, center){
   overlay.remove();$('modalBack').classList.remove('hidden');
  };
 }
-$('captureLocation').onclick=async()=>{
+$('captureLocation').onclick=()=>{
  if(!ADMIN_MODE)return;
  if(!map||!window.google||!google.maps){alert('El mapa todavía no está listo.');return}
  const center=map.getCenter();if(!center){alert('No hay una ubicación visible para capturar.');return}
- if(!navigator.mediaDevices?.getDisplayMedia){
-  const picker=document.createElement('input');picker.type='file';picker.accept='image/*';picker.onchange=()=>{
-   const file=picker.files?.[0];if(!file)return;const url=URL.createObjectURL(file);
-   openMapCropper(url,center);
-  };
-  alert('En este iPad el navegador no permite capturar directamente la pantalla desde la página. Toma una captura de pantalla del mapa con los botones del iPad y, al continuar, selecciónala en Fotos para recortarla.');
-  picker.click();return;
- }
- let stream=null;
- try{
-  stream=await navigator.mediaDevices.getDisplayMedia({video:{displaySurface:'browser'},audio:false});
-  const video=document.createElement('video');video.srcObject=stream;video.muted=true;video.playsInline=true;
-  await new Promise((resolve,reject)=>{video.onloadedmetadata=resolve;video.onerror=reject;});
-  await video.play();await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-  const mapRect=$('map').getBoundingClientRect();
-  const scaleX=video.videoWidth/window.innerWidth,scaleY=video.videoHeight/window.innerHeight;
-  const sx=Math.max(0,Math.round(mapRect.left*scaleX)),sy=Math.max(0,Math.round(mapRect.top*scaleY));
-  const sw=Math.min(video.videoWidth-sx,Math.round(mapRect.width*scaleX)),sh=Math.min(video.videoHeight-sy,Math.round(mapRect.height*scaleY));
-  if(sw<2||sh<2)throw new Error('No se pudo identificar el área del mapa. Elige compartir la pestaña actual del navegador.');
-  const canvas=document.createElement('canvas');canvas.width=sw;canvas.height=sh;canvas.getContext('2d').drawImage(video,sx,sy,sw,sh,0,0,sw,sh);
-  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw new Error('No se pudo generar la captura.');
-  stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;
-  const url=URL.createObjectURL(blob);openMapCropper(url,center);
- }catch(err){
-  if(stream)stream.getTracks().forEach(t=>t.stop());
-  if(err?.name==='NotAllowedError')return;
-  alert('No se pudo capturar la pantalla: '+(err?.message||err));
- }
+ const picker=document.createElement('input');
+ picker.type='file';picker.accept='image/*';picker.setAttribute('aria-label','Selecciona la captura del mapa');
+ picker.onchange=()=>{
+  const file=picker.files?.[0];if(!file)return;
+  if(!file.type.startsWith('image/')){alert('Selecciona una imagen de captura.');return}
+  const url=URL.createObjectURL(file);
+  openMapCropper(url,center);
+ };
+ alert('Primero toma una captura de pantalla del mapa con tu dispositivo. Después selecciona esa imagen en Fotos, Galería o Archivos. Podrás recortarla aquí para dejar únicamente el área que necesitas.');
+ picker.click();
 };
 $('locate').onclick=()=>{
  if(!navigator.geolocation){alert('Este navegador no permite geolocalización.');return}
