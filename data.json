@@ -29,18 +29,6 @@
       "lng": -117.03682670898438
     }
   ],
-  "shelters": [
-    {
-      "id": "mwippba4ql1cl",
-      "name": "Karla",
-      "description": "durango 705 col las torres cp 22470\nporton negro",
-      "photo": null,
-      "contact": "Karla",
-      "phone": "6645394736",
-      "note": "Prueba",
-      "lat": 32.522339477157374,
-      "lng": -117.04368549985979
-    }
-  ],
+  "shelters": [],
   "events": []
 }
