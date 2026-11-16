@@ -86,6 +86,11 @@ body.admin-mode .map-hint{display:none!important}
 .admin-only{display:inline-flex}
 @media(max-width:760px){.map-tools{top:8px;right:8px;gap:6px}.map-tools button{padding:7px 9px;font-size:11px}.address-search-panel{top:48px!important;right:8px!important;width:min(340px,calc(100% - 16px))!important;padding:7px!important}}
 @media(min-width:761px) and (max-width:1100px){.map-tools{top:10px;right:10px}.address-search-panel{top:52px!important;right:10px!important}}
+.streetview-capture-mode .sidebar,.streetview-capture-mode .modal-back,.streetview-capture-mode .map-hint,.streetview-capture-mode .map-tools,.streetview-capture-mode .address-search-panel{display:none!important}
+.streetview-capture-mode .app{display:block!important;width:100vw!important;height:100vh!important;min-height:100vh!important}
+.streetview-capture-mode .mapwrap{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;z-index:2147483000!important}
+.streetview-capture-mode #map{width:100%!important;height:100%!important}
+.capture-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.capture-editor{margin-top:10px;padding:10px;border:1px solid #d8e0ec;border-radius:10px;background:#f8fafc}.crop-stage{position:relative;display:inline-block;max-width:100%;line-height:0;touch-action:none;user-select:none;-webkit-user-select:none}.crop-stage img{display:block;max-width:100%;max-height:42vh;width:auto;height:auto;pointer-events:none}.crop-frame{position:absolute;border:2px solid #2563eb;box-shadow:0 0 0 9999px #0f172a88;cursor:move;touch-action:none}.crop-handle{position:absolute;width:22px;height:22px;right:-9px;bottom:-9px;border:2px solid #fff;border-radius:50%;background:#2563eb;box-shadow:0 1px 5px #0005;cursor:nwse-resize;touch-action:none}.crop-editor-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}.capture-help{font-size:12px;color:#64748b;margin:6px 0 0}
 </style>
 </head>
 <body>
@@ -158,7 +163,7 @@ body.admin-mode .map-hint{display:none!important}
     <div class="field"><label for="pointName">Nombre de la zona</label><input id="pointName" type="text" placeholder="Ej. Zona de acceso norte"></div>
     <div class="field"><label for="pointDesc">Descripción</label><textarea id="pointDesc" rows="3" placeholder="Información para identificar esta zona"></textarea></div>
     <div class="field"><label for="pointNote">Nota de referencia</label><textarea id="pointNote" rows="2" placeholder="Ej. Frente a la entrada principal, junto al estacionamiento..."></textarea></div>
-    <div class="field"><label for="pointPhoto">Fotografía de la zona</label><input id="pointPhoto" type="file" accept="image/*"><img id="photoPreview" class="preview hidden" alt="Vista previa"></div>
+    <div class="field"><label for="pointPhoto">Fotografía de la zona</label><input id="pointPhoto" type="file" accept="image/*"><div class="capture-actions"><button id="capturePoint" type="button">Capturar pantalla</button></div><p class="capture-help">Selecciona la ventana o pestaña donde se muestra el mapa.</p><img id="photoPreview" class="preview hidden" alt="Vista previa"><div id="captureEditor" class="capture-editor hidden"><p class="capture-help">Ajusta el recorte arrastrando el marco. Usa la esquina inferior derecha para cambiar su tamaño.</p><div id="cropStage" class="crop-stage"><img id="cropImage" alt="Imagen para recortar"><div id="cropFrame" class="crop-frame"><span class="crop-handle"></span></div></div><div class="crop-editor-actions"><button id="cancelCrop" type="button">Cancelar</button><button id="useCrop" class="primary" type="button">Usar recorte</button></div></div></div>
     <div class="muted" id="coordText"></div>
     <div class="modal-actions"><button id="cancelModal">Cancelar</button><button class="primary" id="savePoint">Guardar punto</button></div>
   </div>
@@ -399,6 +404,7 @@ function configureMode(){
  $('addShelter').classList.toggle('hidden',!ADMIN_MODE);
  $('addEvent').classList.toggle('hidden',!ADMIN_MODE);
  $('publishHtml').classList.toggle('hidden',!ADMIN_MODE);
+ $('capturePoint').classList.toggle('hidden',!ADMIN_MODE);
  $('refreshData').classList.toggle('hidden',!ADMIN_MODE);
  $('mapName').readOnly=!ADMIN_MODE;
  $('mapName').style.borderBottomColor=ADMIN_MODE?'#ffffff55':'transparent';
@@ -509,11 +515,103 @@ function openPointModal(p=null){
  }
 }
 function closeModal(){$('modalBack').classList.add('hidden');}
+function showCropEditorFromSource(src){
+ const img=$('cropImage');
+ $('photoPreview').classList.add('hidden');$('captureEditor').classList.remove('hidden');
+ img.onload=()=>{
+  cropSourceImage=img;
+  const stage=$('cropStage'),w=img.clientWidth,h=img.clientHeight;
+  stage.style.width=w+'px';stage.style.height=h+'px';
+  cropBox={x:w*.05,y:h*.05,w:w*.9,h:h*.9};
+  paintCropBox();
+ };
+ img.onerror=()=>alert('No se pudo abrir la imagen capturada.');
+ img.src=src;
+}
 $('pointPhoto').addEventListener('change',e=>{
  const f=e.target.files&&e.target.files[0];if(!f)return;
- if(f.size>3*1024*1024){alert('Elige una fotografía de menos de 3 MB.');e.target.value='';return}
- const reader=new FileReader();reader.onload=()=>{photoData=reader.result;$('photoPreview').src=photoData;$('photoPreview').classList.remove('hidden')};reader.readAsDataURL(f);
+ if(f.size>15*1024*1024){alert('Elige una fotografía de menos de 15 MB.');e.target.value='';return}
+ const reader=new FileReader();reader.onload=()=>showCropEditorFromSource(reader.result);reader.readAsDataURL(f);
 });
+let cropSourceImage=null,cropBox=null,cropPointer=null;
+async function captureMapScreen(){
+ if(!ADMIN_MODE)return;
+ const panorama=map&&map.getStreetView?map.getStreetView():null;
+ if(!panorama||!panorama.getVisible()){
+  alert('Primero abre Street View en el lugar que quieres fotografiar. Después pulsa Capturar pantalla.');
+  return;
+ }
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia){
+  alert('Este navegador no permite capturar la pantalla desde la aplicación. Toma una captura del dispositivo y selecciónala en «Fotografía de la zona».');
+  return;
+ }
+ let stream=null,oldOptions={addressControl:true,linksControl:true,panControl:true,zoomControl:true,enableCloseButton:true};
+ try{
+  stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:1},audio:false});
+  const video=document.createElement('video');video.muted=true;video.playsInline=true;video.srcObject=stream;
+  await new Promise((resolve,reject)=>{video.onloadedmetadata=resolve;video.onerror=reject;});
+  await video.play();
+  document.body.classList.add('streetview-capture-mode');
+  panorama.setOptions({addressControl:false,linksControl:false,panControl:false,zoomControl:false,enableCloseButton:false});
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  await new Promise(resolve=>setTimeout(resolve,250));
+  const track=stream.getVideoTracks()[0],settings=track.getSettings();
+  const width=video.videoWidth||settings.width,height=video.videoHeight||settings.height;
+  if(!width||!height)throw new Error('No se pudo obtener la imagen de Street View.');
+  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+  canvas.getContext('2d').drawImage(video,0,0,width,height);
+  const captured=canvas.toDataURL('image/jpeg',.94);
+  document.body.classList.remove('streetview-capture-mode');
+  panorama.setOptions(oldOptions);
+  if(window.google&&google.maps)google.maps.event.trigger(map,'resize');
+  stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  showCropEditorFromSource(captured);
+ }catch(err){
+  document.body.classList.remove('streetview-capture-mode');
+  if(panorama)panorama.setOptions(oldOptions);
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  if(err&&err.name==='NotAllowedError')return;
+  alert(err&&err.message?err.message:'No se pudo capturar Street View. Inténtalo nuevamente.');
+ }
+}
+$('capturePoint').onclick=captureMapScreen;
+function paintCropBox(){if(!cropBox)return;const f=$('cropFrame');f.style.left=cropBox.x+'px';f.style.top=cropBox.y+'px';f.style.width=cropBox.w+'px';f.style.height=cropBox.h+'px';}
+function cropPoint(e){const r=$('cropStage').getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
+$('cropFrame').addEventListener('pointerdown',e=>{
+ if(!cropBox)return;e.preventDefault();const handle=e.target.closest('.crop-handle');
+ cropPointer={id:e.pointerId,mode:handle?'resize':'move',start:cropPoint(e),box:{...cropBox}};
+ $('cropFrame').setPointerCapture(e.pointerId);
+});
+$('cropFrame').addEventListener('pointermove',e=>{
+ if(!cropPointer||e.pointerId!==cropPointer.id)return;
+ const p=cropPoint(e),dx=p.x-cropPointer.start.x,dy=p.y-cropPointer.start.y,stage=$('cropStage');
+ if(cropPointer.mode==='move'){
+  cropBox.x=Math.max(0,Math.min(stage.clientWidth-cropBox.w,cropPointer.box.x+dx));
+  cropBox.y=Math.max(0,Math.min(stage.clientHeight-cropBox.h,cropPointer.box.y+dy));
+ }else{
+  cropBox.w=Math.max(48,Math.min(stage.clientWidth-cropBox.x,cropPointer.box.w+dx));
+  cropBox.h=Math.max(48,Math.min(stage.clientHeight-cropBox.y,cropPointer.box.h+dy));
+ }
+ paintCropBox();
+});
+function stopCropPointer(e){if(cropPointer&&e.pointerId===cropPointer.id)cropPointer=null;}
+$('cropFrame').addEventListener('pointerup',stopCropPointer);
+$('cropFrame').addEventListener('pointercancel',stopCropPointer);
+$('cancelCrop').onclick=()=>{$('captureEditor').classList.add('hidden');$('pointPhoto').value='';$('photoPreview').classList.toggle('hidden',!photoData);cropSourceImage=null;cropBox=null;};
+$('useCrop').onclick=()=>{
+ if(!cropSourceImage||!cropBox)return;
+ const scaleX=cropSourceImage.naturalWidth/$('cropStage').clientWidth,scaleY=cropSourceImage.naturalHeight/$('cropStage').clientHeight;
+ const sx=Math.round(cropBox.x*scaleX),sy=Math.round(cropBox.y*scaleY);
+ const sw=Math.max(1,Math.round(cropBox.w*scaleX)),sh=Math.max(1,Math.round(cropBox.h*scaleY));
+ const canvas=document.createElement('canvas'),limit=1800,ratio=Math.min(1,limit/Math.max(sw,sh));
+ canvas.width=Math.max(1,Math.round(sw*ratio));canvas.height=Math.max(1,Math.round(sh*ratio));
+ canvas.getContext('2d').drawImage(cropSourceImage,sx,sy,sw,sh,0,0,canvas.width,canvas.height);
+ const croppedImage=canvas.toDataURL('image/jpeg',.86);
+ if(!confirm('¿Quieres utilizar este recorte como fotografía de la zona?'))return;
+ photoData=croppedImage;$('photoPreview').src=photoData;$('photoPreview').classList.remove('hidden');
+ $('captureEditor').classList.add('hidden');$('pointPhoto').value='';cropSourceImage=null;cropBox=null;
+};
 $('cancelModal').onclick=()=>{
  closeModal();
  if(placementMarker){placementMarker.setMap(null);placementMarker=null;}
