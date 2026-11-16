@@ -1,5 +1,5 @@
 'use strict';
-const CACHE_NAME='ppam-tij-admin-v5';
+const CACHE_NAME='ppam-tij-admin-v6';
 const APP_FILES=['./admin.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-192.svg','./icon-512.svg'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_FILES)).then(()=>self.skipWaiting()));
@@ -13,6 +13,10 @@ self.addEventListener('fetch',event=>{
   const url=new URL(request.url);
   // Google Maps, sus mosaicos y servicios siempre deben ir a la red.
   if(url.origin!==self.location.origin)return;
+  if(url.pathname.endsWith('/data.json')){
+    event.respondWith(fetch(request,{cache:'no-store'}).then(response=>response).catch(()=>caches.match(request)));
+    return;
+  }
   if(request.mode==='navigate'){
     event.respondWith(fetch(request).then(response=>{
       const copy=response.clone();caches.open(CACHE_NAME).then(cache=>cache.put('./admin.html',copy));return response;

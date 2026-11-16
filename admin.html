@@ -79,7 +79,7 @@ input:focus,textarea:focus{border-color:var(--blue)}
     <header class="brand">
       <small>MAPA PERSONALIZADO</small>
       <div class="brandline"><span>⌖</span><input id="mapName" value="Mapa de zonas PPAM-TIJ" aria-label="Nombre del mapa" title="Haz clic para cambiar el nombre"></div>
-      <div class="brand-tools"><button id="installApp" class="install-app" type="button">＋ Instalar aplicación</button></div>
+      <div class="brand-tools"><button id="installApp" class="install-app" type="button">＋ Instalar aplicación</button> <button id="connectGithub" class="install-app" type="button">Conectar GitHub</button><span id="githubStatus" style="display:block;font-size:11px;margin-top:5px;color:#fde68a">Sin conexión a GitHub</span></div>
     </header>
     <nav class="tabs" aria-label="Secciones del mapa">
       <button class="tab active" data-tab="zones" type="button">Zonas</button>
@@ -189,8 +189,83 @@ let map, geocoder, geocodeRequest=0, markers={}, pendingCoords=null, editingId=n
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 function validData(x){return x&&Array.isArray(x.routes)&&Array.isArray(x.points)}
-function load(){try{const embedded=JSON.parse($('publishedData').textContent||'{}');if(validData(embedded))state={...state,...embedded,shelters:Array.isArray(embedded.shelters)?embedded.shelters:[],events:Array.isArray(embedded.events)?embedded.events:[]};if(ADMIN_MODE){const raw=localStorage.getItem(KEY);if(raw){const draft=JSON.parse(raw);if(validData(draft))state={...state,...draft,shelters:Array.isArray(draft.shelters)?draft.shelters:[]}}}}catch(e){console.warn('No se pudo cargar el mapa:',e)}}
-function save(){if(!ADMIN_MODE)return;try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){alert('No se pudo guardar el borrador en este navegador. Publica o exporta el HTML con frecuencia y usa fotografías más pequeñas.')} }
+let githubWriteTimer=null,githubWriteBusy=false,githubWritePending=false,githubDataSha=null;
+const GITHUB_REPO='skhouseconstruction-hue/mapa-zonas-ppam-tij';
+const GITHUB_BRANCH='main';
+const GITHUB_TOKEN_KEY='ppam_github_token_session';
+function githubToken(){return sessionStorage.getItem(GITHUB_TOKEN_KEY)||''}
+function setGithubStatus(message,ok=false){const el=$('githubStatus');if(el){el.textContent=message;el.style.color=ok?'#bbf7d0':'#fde68a'}}
+function githubHeaders(token){return {'Accept':'application/vnd.github+json','Authorization':'Bearer '+token,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'}}
+function encodeGithubContent(value){return btoa(unescape(encodeURIComponent(value)))}
+async function loadSharedData(){
+ const response=await fetch('./data.json?ts='+Date.now(),{cache:'no-store'});
+ if(!response.ok)throw new Error('No se pudo consultar data.json');
+ const data=await response.json();if(!validData(data))throw new Error('El archivo compartido no tiene un formato válido');
+ state={...state,...data,shelters:Array.isArray(data.shelters)?data.shelters:[],events:Array.isArray(data.events)?data.events:[]};
+}
+async function load(){
+ try{
+  const embedded=JSON.parse($('publishedData').textContent||'{}');
+  if(validData(embedded))state={...state,...embedded,shelters:Array.isArray(embedded.shelters)?embedded.shelters:[],events:Array.isArray(embedded.events)?embedded.events:[]};
+  try{await loadSharedData()}catch(e){console.warn('Se usará la copia incluida mientras data.json no esté disponible:',e)}
+  if(ADMIN_MODE){
+   const raw=localStorage.getItem(KEY);
+   if(raw){
+    const draft=JSON.parse(raw);
+    if(validData(draft)){
+     const useDraft=confirm('Se encontró un borrador guardado en este dispositivo. ¿Quieres cargar ese borrador en lugar de los datos compartidos?\n\nAceptar: usar el borrador de este dispositivo.\nCancelar: usar los datos compartidos de GitHub.');
+     if(useDraft)state={...state,...draft,shelters:Array.isArray(draft.shelters)?draft.shelters:[],events:Array.isArray(draft.events)?draft.events:[]};
+    }
+   }
+  }
+ }catch(e){console.warn('No se pudo cargar el mapa:',e)}
+}
+async function pushSharedData(){
+ if(!ADMIN_MODE||!githubToken())return;
+ if(githubWriteBusy){githubWritePending=true;return}
+ githubWriteBusy=true;
+ try{
+  const token=githubToken(),url='https://api.github.com/repos/'+GITHUB_REPO+'/contents/data.json';
+  const get=await fetch(url+'?ref='+GITHUB_BRANCH,{headers:githubHeaders(token),cache:'no-store'});
+  if(!get.ok)throw new Error(get.status===401||get.status===403?'GitHub rechazó la autorización. Revisa el token y sus permisos.':'No se pudo consultar el archivo compartido ('+get.status+').');
+  const current=await get.json();
+  const content=JSON.stringify(state,null,2);
+  const put=await fetch(url,{method:'PUT',headers:githubHeaders(token),body:JSON.stringify({message:'Actualizar datos del mapa PPAM-TIJ',content:encodeGithubContent(content),sha:current.sha,branch:GITHUB_BRANCH})});
+  if(put.status===409||put.status===422)throw new Error('GitHub detectó un cambio simultáneo. Recarga los datos compartidos antes de volver a publicar para no sobrescribir cambios.');
+  if(!put.ok){const detail=await put.json().catch(()=>({}));throw new Error(detail.message||'No se pudieron publicar los cambios ('+put.status+').')}
+  const result=await put.json();githubDataSha=result.content?.sha||null;
+  setGithubStatus('Sincronizado con GitHub ✓',true);
+ }catch(e){setGithubStatus('Pendiente: '+e.message);console.error(e)}
+ finally{
+  githubWriteBusy=false;
+  if(githubWritePending){githubWritePending=false;clearTimeout(githubWriteTimer);githubWriteTimer=setTimeout(pushSharedData,1200)}
+ }
+}
+function save(){
+ if(!ADMIN_MODE)return;
+ try{localStorage.setItem(KEY,JSON.stringify(state));}
+ catch(e){alert('No se pudo guardar el borrador en este navegador. Usa fotografías más pequeñas.')}
+ if(githubToken()){
+  setGithubStatus('Guardando cambios en GitHub…');
+  clearTimeout(githubWriteTimer);githubWriteTimer=setTimeout(pushSharedData,1200);
+ }else setGithubStatus('Guardado local. Conecta GitHub para compartir los cambios.');
+}
+async function connectGitHub(){
+ const entered=prompt('Pega tu token Fine-grained de GitHub. Debe tener acceso únicamente al repositorio mapa-zonas-ppam-tij y permiso Contents: Read and write. No lo compartas por chat.');
+ if(!entered)return;
+ const token=entered.trim();
+ try{
+  const response=await fetch('https://api.github.com/repos/'+GITHUB_REPO+'/contents/data.json?ref='+GITHUB_BRANCH,{headers:githubHeaders(token),cache:'no-store'});
+  if(!response.ok)throw new Error(response.status===401||response.status===403?'Token inválido o sin permiso Contents: Read and write.':'No se pudo verificar el acceso a data.json ('+response.status+').');
+  sessionStorage.setItem(GITHUB_TOKEN_KEY,token);
+  setGithubStatus('GitHub autorizado en este dispositivo ✓',true);
+  if(confirm('Autorización correcta. ¿Quieres publicar ahora los datos que tienes abiertos en este dispositivo?')){
+   await pushSharedData();
+  }else{
+   await loadSharedData();refresh();setGithubStatus('Datos compartidos cargados desde GitHub ✓',true);
+  }
+ }catch(e){sessionStorage.removeItem(GITHUB_TOKEN_KEY);setGithubStatus(e.message);alert(e.message)}
+}
 function loadGoogleMaps(key){
  return new Promise((resolve,reject)=>{
   if(window.google&&google.maps){resolve();return}
@@ -586,8 +661,8 @@ window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;installBu
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost')){
  window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(err=>console.warn('No se pudo activar el modo de aplicación:',err)));
 }
-load();configureMode();refresh();
-if(GOOGLE_MAPS_API_KEY){connectGoogleMaps()}else{$('apiSetup').classList.remove('hidden');}
+if(ADMIN_MODE)$('connectGithub').addEventListener('click',connectGitHub);
+load().then(()=>{configureMode();refresh();if(ADMIN_MODE&&githubToken())setGithubStatus('GitHub autorizado en este dispositivo ✓',true);if(GOOGLE_MAPS_API_KEY){connectGoogleMaps()}else{$('apiSetup').classList.remove('hidden');}});
 })();
 </script>
 </body>
