@@ -477,7 +477,7 @@ function openPointModal(p=null){
  $('modalTitle').textContent=p?'Editar zona':'Nueva zona';
  $('pointName').value=p?.name||'';$('pointDesc').value=p?.description||'';$('pointNote').value=p?.note||'';
  $('coordText').textContent=p?`Coordenadas: ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`:`Coordenadas: ${pendingCoords.lat.toFixed(6)}, ${pendingCoords.lng.toFixed(6)}`;
- $('pointPhoto').value='';$('capturePicker').value='';$('captureEditor').classList.add('hidden');$('photoPreview').src=photoData||'';$('photoPreview').classList.toggle('hidden',!photoData);
+ $('pointPhoto').value='';$('captureEditor').classList.add('hidden');$('photoPreview').src=photoData||'';$('photoPreview').classList.toggle('hidden',!photoData);
  $('modalBack').classList.remove('hidden');
  // En una zona nueva, busca la calle correspondiente a las coordenadas del pin.
  if(!p && geocoder && pendingCoords){
