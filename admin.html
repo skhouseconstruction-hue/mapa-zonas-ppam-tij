@@ -569,11 +569,9 @@ $('pointPhoto').addEventListener('change',e=>{
 let cropSourceImage=null,cropBox=null,cropPointer=null;
 async function captureMapScreen(){
  if(!ADMIN_MODE)return;
+ // La captura funciona tanto con el mapa normal como con Street View.
  const panorama=map&&map.getStreetView?map.getStreetView():null;
- if(!panorama||!panorama.getVisible()){
-  alert('Primero abre Street View en el lugar que quieres fotografiar. Después pulsa Capturar pantalla.');
-  return;
- }
+ const streetViewVisible=!!(panorama&&panorama.getVisible());
  if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia){
   alert('Este navegador no permite capturar la pantalla desde la aplicación. Toma una captura del dispositivo y selecciónala en «Fotografía de la zona».');
   return;
@@ -583,14 +581,14 @@ async function captureMapScreen(){
  let captureModeStarted=false;
  const restoreCaptureView=()=>{
   document.body.classList.remove('streetview-capture-mode');
-  if(panorama)panorama.setOptions(oldOptions);
+  if(streetViewVisible&&panorama)panorama.setOptions(oldOptions);
   if(window.google&&google.maps&&map)google.maps.event.trigger(map,'resize');
  };
  try{
   // Ocultar primero el formulario y ampliar Street View ANTES de abrir el selector de Chrome.
   document.body.classList.add('streetview-capture-mode');
   captureModeStarted=true;
-  panorama.setOptions({addressControl:false,linksControl:false,panControl:false,zoomControl:false,enableCloseButton:false});
+  if(streetViewVisible)panorama.setOptions({addressControl:false,linksControl:false,panControl:false,zoomControl:false,enableCloseButton:false});
   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   await new Promise(resolve=>setTimeout(resolve,450));
   // En este momento el usuario ya ve únicamente el mapa al elegir qué ventana compartir.
