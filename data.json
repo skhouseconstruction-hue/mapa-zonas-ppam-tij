@@ -37,6 +37,16 @@
       "photo": null,
       "lat": 32.3938917710698,
       "lng": -117.0150939729491
+    },
+    {
+      "id": "mwixadbysh252",
+      "routeId": null,
+      "name": "prueba 15",
+      "description": "",
+      "note": "",
+      "photo": null,
+      "lat": null,
+      "lng": null
     }
   ],
   "shelters": [
