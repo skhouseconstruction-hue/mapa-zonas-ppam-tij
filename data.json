@@ -340,6 +340,17 @@
       "note": "",
       "lat": 32.53043105608647,
       "lng": -117.12358474745015
+    },
+    {
+      "id": "mwiz0sgv4076m",
+      "name": "playas de tijuana",
+      "description": "",
+      "photo": null,
+      "contact": "ricardo",
+      "phone": "6634535485",
+      "note": "casa negra",
+      "lat": null,
+      "lng": null
     }
   ],
   "events": []
