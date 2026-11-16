@@ -684,6 +684,7 @@ function startAddingShelter(){
  openShelterModal();
  $('hint').textContent='Completa los datos del resguardo. Puedes agregar la ubicación ahora o después.';
 }
+$('addShelter').onclick=()=>{if(ADMIN_MODE)startAddingShelter()};
 $('removeShelterPhoto').onclick=()=>{shelterPhotoData=null;$('shelterPhoto').value='';$('shelterPhotoPreview').src='';$('shelterPhotoPreview').classList.add('hidden');$('removeShelterPhoto').classList.add('hidden')};
 $('cancelShelter').onclick=()=>{addingShelter=false;editingShelterId=null;pickingRecordLocation=null;$('zonePickerPin').classList.add('hidden');$('zonePickerActions').classList.add('hidden');if(placementMarker){placementMarker.setMap(null);placementMarker=null;}pendingCoords=null;$('shelterModalBack').classList.add('hidden');$('addShelter').textContent='＋ Agregar resguardo';map?.setOptions({draggableCursor:null});};
 $('selectShelterLocation').onclick=()=>beginRecordLocationPick('shelter');
