@@ -245,13 +245,13 @@ async function refreshSharedFromGitHub(silent=false){
   const remote=await readGitHubJson(response,'consultar/verificar GitHub');
   if(githubDataSha&&remote.sha!==githubDataSha){
    if(githubLastSyncedState!==null&&sharedSnapshot()!==githubLastSyncedState){setGithubStatus('Hay cambios locales pendientes. No se cargaron cambios externos para protegerlos.');return}
-   const parsed=decodeGitHubFile(remote,'sincronizar');
+   const parsed=await decodeGitHubFile(remote,githubToken(),'sincronizar');
    state={...state,...parsed,shelters:Array.isArray(parsed.shelters)?parsed.shelters:[],events:Array.isArray(parsed.events)?parsed.events:[]};
    githubDataSha=remote.sha;githubLastSyncedState=sharedSnapshot();
    try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}
    refresh();setGithubStatus('Actualizado desde otro dispositivo ✓',true);
   }else if(!githubDataSha){
-   const parsed=decodeGitHubFile(remote,'sincronizar');
+   const parsed=await decodeGitHubFile(remote,githubToken(),'sincronizar');
    state={...state,...parsed,shelters:Array.isArray(parsed.shelters)?parsed.shelters:[],events:Array.isArray(parsed.events)?parsed.events:[]};
    githubDataSha=remote.sha;githubLastSyncedState=sharedSnapshot();
    try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}
@@ -277,14 +277,27 @@ async function readGitHubJson(response,action){
  try{return JSON.parse(raw)}
  catch(error){throw new Error('La respuesta de GitHub llegó incompleta o no válida al '+action+'. No se modificaron los datos. Intenta de nuevo.')}
 }
-function decodeGitHubFile(remote,action){
- if(!remote||typeof remote.content!=='string'||!remote.content.trim())throw new Error('GitHub no entregó el contenido de data.json al '+action+'. No se modificaron los datos.');
+async function decodeGitHubFile(remote,token,action){
+ if(!remote||!remote.sha)throw new Error('GitHub no proporcionó la versión del archivo data.json al '+action+'. No se modificaron los datos.');
  try{
-  const decoded=decodeURIComponent(escape(atob(remote.content.replace(/\\n/g,''))));
+  let encoded=typeof remote.content==='string'?remote.content.trim():'';
+  // GitHub Contents API puede omitir content en archivos grandes. En ese caso
+  // recuperamos el mismo blob por SHA, sin cambiar ni volver a publicar datos.
+  if(!encoded){
+   const blobResponse=await fetch('https://api.github.com/repos/'+GITHUB_REPO+'/git/blobs/'+remote.sha,{headers:githubHeaders(token||githubToken()),cache:'no-store'});
+   if(!blobResponse.ok)throw new Error('No se pudo recuperar el archivo grande desde GitHub ('+blobResponse.status+').');
+   const blob=await readGitHubJson(blobResponse,'recuperar el archivo compartido');
+   if(blob.encoding!=='base64'||typeof blob.content!=='string'||!blob.content.trim())throw new Error('GitHub no entregó el contenido del archivo compartido.');
+   encoded=blob.content;
+  }
+  const decoded=decodeURIComponent(escape(atob(encoded.replace(/\\n/g,''))));
   const parsed=JSON.parse(decoded);
   if(!validData(parsed))throw new Error('formato');
   return parsed;
- }catch(error){throw new Error('El archivo data.json recibido de GitHub está vacío, incompleto o tiene un formato no válido. No se modificaron los datos.')}
+ }catch(error){
+  if(error.message&&(/recuperar|entregó|archivo grande/.test(error.message)))throw error;
+  throw new Error('El archivo data.json recibido de GitHub está incompleto o tiene un formato no válido. No se modificaron los datos.');
+ }
 }
 async function loadSharedData(){
  const response=await fetch('./data.json?ts='+Date.now(),{cache:'no-store'});
@@ -342,7 +355,7 @@ async function connectGitHub(){
   const response=await fetch('https://api.github.com/repos/'+GITHUB_REPO+'/contents/data.json?ref='+GITHUB_BRANCH,{headers:githubHeaders(token),cache:'no-store'});
   if(!response.ok)throw new Error(response.status===401||response.status===403?'Token inválido o sin permiso Contents: Read and write.':'No se pudo verificar el acceso a data.json ('+response.status+').');
   const remote=await readGitHubJson(response,'verificar la conexión');
-  const parsedRemote=decodeGitHubFile(remote,'verificar la conexión');
+  const parsedRemote=await decodeGitHubFile(remote,token,'verificar la conexión');
   const remoteData={...parsedRemote,shelters:Array.isArray(parsedRemote.shelters)?parsedRemote.shelters:[],events:Array.isArray(parsedRemote.events)?parsedRemote.events:[]};
   const localData={...state,shelters:Array.isArray(state.shelters)?state.shelters:[],events:Array.isArray(state.events)?state.events:[]};
   const localText=JSON.stringify(localData);
