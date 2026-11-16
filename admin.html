@@ -69,6 +69,7 @@ body.admin-mode .map-hint{display:none!important}
 .modal{background:#fff;border-radius:14px;padding:18px;width:min(440px,100%);max-height:90vh;overflow:auto;box-shadow:0 20px 60px #0003}
 .modal h3{font-size:18px}.field{margin:12px 0}.field label{display:block;font-weight:700;margin-bottom:5px}
 .preview{width:100%;max-height:170px;object-fit:cover;border-radius:8px;margin-top:8px}
+.capture-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.capture-editor{margin-top:10px;padding:10px;border:1px solid #d8e0ec;border-radius:10px;background:#f8fafc}.crop-stage{position:relative;display:inline-block;max-width:100%;line-height:0;touch-action:none;user-select:none;-webkit-user-select:none}.crop-stage img{display:block;max-width:100%;max-height:42vh;width:auto;height:auto;pointer-events:none}.crop-frame{position:absolute;border:2px solid #2563eb;box-shadow:0 0 0 9999px #0f172a88;cursor:move;touch-action:none}.crop-handle{position:absolute;width:22px;height:22px;right:-9px;bottom:-9px;border:2px solid #fff;border-radius:50%;background:#2563eb;box-shadow:0 1px 5px #0005;cursor:nwse-resize;touch-action:none}.crop-editor-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}.capture-help{font-size:12px;color:#64748b;margin:6px 0 0}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 .footer{padding:10px 14px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
 @media(max-width:760px){.app{grid-template-columns:1fr;grid-template-rows:minmax(220px,30dvh) minmax(0,1fr)}.sidebar{height:100%;min-height:0}.panel{height:0;min-height:0;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch}.mapwrap{grid-row:1;min-height:0}.sidebar{grid-row:2;border-right:0;border-top:1px solid var(--line)}.brand{padding:8px 12px}.brandline{gap:7px}.brandline input{font-size:15px;min-width:0}.brand-tools{margin-top:6px;display:flex;align-items:center;flex-wrap:wrap;gap:6px}.brand-tools #githubStatus{flex:1 1 100%;font-size:10px!important;line-height:1.3}.tabs{padding:6px 8px;gap:4px}.tab{padding:8px 3px;font-size:11px;line-height:1.2}.tab-about{min-height:28px}.publish-tab{min-height:34px;padding:7px 10px}.panel{padding:9px}.map-hint{top:44px;left:8px;max-width:calc(100% - 16px);padding:5px 8px;font-size:11px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.address-search-panel{top:88px!important;bottom:auto!important;left:8px;right:8px;transform:none;width:auto;max-width:none;margin:0;padding:6px;box-sizing:border-box}.address-search-panel .searchbox{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:stretch;gap:6px;margin:0;width:100%}.address-search-panel input{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;padding:8px;font-size:13px}.address-search-panel button{min-width:68px;max-width:82px;padding:8px 10px;font-size:12px;white-space:nowrap}.address-search-panel #searchResults{max-height:16vh;margin-top:4px;overflow:auto}.toolbar{top:auto;bottom:6px;right:6px}.toolbar button{padding:6px;font-size:11px}#searchPanel{top:auto!important;bottom:46px;right:8px}}@media(max-width:420px){.brand{padding:7px 10px}.brandline input{font-size:14px}.brand-tools button{padding:6px 8px;font-size:11px}.tabs{padding:5px 6px}.tab{padding:7px 2px;font-size:10px}.panel{padding:8px}.card{padding:9px;margin:7px 0}.publish-tab{font-size:11px}}
@@ -157,7 +158,7 @@ body.admin-mode .map-hint{display:none!important}
     <div class="field"><label for="pointName">Nombre de la zona</label><input id="pointName" type="text" placeholder="Ej. Zona de acceso norte"></div>
     <div class="field"><label for="pointDesc">Descripción</label><textarea id="pointDesc" rows="3" placeholder="Información para identificar esta zona"></textarea></div>
     <div class="field"><label for="pointNote">Nota de referencia</label><textarea id="pointNote" rows="2" placeholder="Ej. Frente a la entrada principal, junto al estacionamiento..."></textarea></div>
-    <div class="field"><label for="pointPhoto">Fotografía de la zona</label><input id="pointPhoto" type="file" accept="image/*"><img id="photoPreview" class="preview hidden" alt="Vista previa"></div>
+    <div class="field"><label for="pointPhoto">Fotografía de la zona</label><input id="pointPhoto" type="file" accept="image/*"><div class="capture-actions"><button id="capturePoint" type="button">Capturar</button></div><input id="capturePicker" class="hidden" type="file" accept="image/*"><img id="photoPreview" class="preview hidden" alt="Vista previa"><div id="captureEditor" class="capture-editor hidden"><p class="capture-help">Ajusta el recorte arrastrando el marco. Usa la esquina inferior derecha para cambiar su tamaño.</p><div id="cropStage" class="crop-stage"><img id="cropImage" alt="Imagen para recortar"><div id="cropFrame" class="crop-frame"><span class="crop-handle"></span></div></div><div class="crop-editor-actions"><button id="cancelCrop" type="button">Cancelar</button><button id="useCrop" class="primary" type="button">Usar recorte</button></div></div></div>
     <div class="muted" id="coordText"></div>
     <div class="modal-actions"><button id="cancelModal">Cancelar</button><button class="primary" id="savePoint">Guardar punto</button></div>
   </div>
@@ -466,7 +467,7 @@ function openPointModal(p=null){
  $('modalTitle').textContent=p?'Editar zona':'Nueva zona';
  $('pointName').value=p?.name||'';$('pointDesc').value=p?.description||'';$('pointNote').value=p?.note||'';
  $('coordText').textContent=p?`Coordenadas: ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}`:`Coordenadas: ${pendingCoords.lat.toFixed(6)}, ${pendingCoords.lng.toFixed(6)}`;
- $('pointPhoto').value='';$('photoPreview').src=photoData||'';$('photoPreview').classList.toggle('hidden',!photoData);
+ $('pointPhoto').value='';$('capturePicker').value='';$('captureEditor').classList.add('hidden');$('photoPreview').src=photoData||'';$('photoPreview').classList.toggle('hidden',!photoData);
  $('modalBack').classList.remove('hidden');
  // En una zona nueva, busca la calle correspondiente a las coordenadas del pin.
  if(!p && geocoder && pendingCoords){
@@ -489,6 +490,61 @@ function openPointModal(p=null){
 }
 function closeModal(){$('modalBack').classList.add('hidden');}
 $('pointPhoto').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;if(f.size>3*1024*1024){alert('Elige una fotografía de menos de 3 MB.');e.target.value='';return}const reader=new FileReader();reader.onload=()=>{photoData=reader.result;$('photoPreview').src=photoData;$('photoPreview').classList.remove('hidden')};reader.readAsDataURL(f)});
+let cropSourceImage=null,cropBox=null,cropPointer=null;
+function openCapturePicker(){if(!ADMIN_MODE)return;$('capturePicker').click();}
+$('capturePoint').onclick=openCapturePicker;
+$('capturePicker').addEventListener('change',e=>{
+ const file=e.target.files&&e.target.files[0];if(!file)return;
+ if(!file.type.startsWith('image/')){alert('Selecciona una imagen.');e.target.value='';return}
+ if(file.size>15*1024*1024){alert('La captura debe pesar menos de 15 MB.');e.target.value='';return}
+ const url=URL.createObjectURL(file),img=$('cropImage');
+ img.onload=()=>{
+  cropSourceImage=img;
+  const stage=$('cropStage'),w=img.clientWidth,h=img.clientHeight;
+  stage.style.width=w+'px';stage.style.height=h+'px';
+  cropBox={x:w*.05,y:h*.05,w:w*.9,h:h*.9};
+  paintCropBox();$('photoPreview').classList.add('hidden');$('captureEditor').classList.remove('hidden');
+  URL.revokeObjectURL(url);
+ };
+ img.onerror=()=>{URL.revokeObjectURL(url);alert('No se pudo abrir esa imagen.');};
+ img.src=url;
+});
+function paintCropBox(){if(!cropBox)return;const f=$('cropFrame');f.style.left=cropBox.x+'px';f.style.top=cropBox.y+'px';f.style.width=cropBox.w+'px';f.style.height=cropBox.h+'px';}
+function cropPoint(e){const r=$('cropStage').getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
+$('cropFrame').addEventListener('pointerdown',e=>{
+ if(!cropBox)return; e.preventDefault();const handle=e.target.closest('.crop-handle');
+ cropPointer={id:e.pointerId,mode:handle?'resize':'move',start:cropPoint(e),box:{...cropBox}};
+ $('cropFrame').setPointerCapture(e.pointerId);
+});
+$('cropFrame').addEventListener('pointermove',e=>{
+ if(!cropPointer||e.pointerId!==cropPointer.id)return;
+ const p=cropPoint(e),dx=p.x-cropPointer.start.x,dy=p.y-cropPointer.start.y,stage=$('cropStage');
+ if(cropPointer.mode==='move'){
+  cropBox.x=Math.max(0,Math.min(stage.clientWidth-cropBox.w,cropPointer.box.x+dx));
+  cropBox.y=Math.max(0,Math.min(stage.clientHeight-cropBox.h,cropPointer.box.y+dy));
+ }else{
+  cropBox.w=Math.max(48,Math.min(stage.clientWidth-cropBox.x,cropPointer.box.w+dx));
+  cropBox.h=Math.max(48,Math.min(stage.clientHeight-cropBox.y,cropPointer.box.h+dy));
+ }
+ paintCropBox();
+});
+function stopCropPointer(e){if(cropPointer&&e.pointerId===cropPointer.id)cropPointer=null;}
+$('cropFrame').addEventListener('pointerup',stopCropPointer);
+$('cropFrame').addEventListener('pointercancel',stopCropPointer);
+$('cancelCrop').onclick=()=>{$('captureEditor').classList.add('hidden');$('capturePicker').value='';cropSourceImage=null;cropBox=null;};
+$('useCrop').onclick=()=>{
+ if(!cropSourceImage||!cropBox)return;
+ const scaleX=cropSourceImage.naturalWidth/$('cropStage').clientWidth,scaleY=cropSourceImage.naturalHeight/$('cropStage').clientHeight;
+ const sx=Math.round(cropBox.x*scaleX),sy=Math.round(cropBox.y*scaleY);
+ const sw=Math.max(1,Math.round(cropBox.w*scaleX)),sh=Math.max(1,Math.round(cropBox.h*scaleY));
+ const canvas=document.createElement('canvas'),limit=1800,ratio=Math.min(1,limit/Math.max(sw,sh));
+ canvas.width=Math.max(1,Math.round(sw*ratio));canvas.height=Math.max(1,Math.round(sh*ratio));
+ const ctx=canvas.getContext('2d');ctx.drawImage(cropSourceImage,sx,sy,sw,sh,0,0,canvas.width,canvas.height);
+ photoData=canvas.toDataURL('image/jpeg',.86);
+ $('photoPreview').src=photoData;$('photoPreview').classList.remove('hidden');
+ $('captureEditor').classList.add('hidden');$('capturePicker').value='';cropSourceImage=null;cropBox=null;
+};
+
 $('cancelModal').onclick=()=>{
  closeModal();
  if(placementMarker){placementMarker.setMap(null);placementMarker=null;}
