@@ -396,7 +396,7 @@ function showSelectedStreet(coords){
  $('hint').textContent='Buscando la dirección del pin…';
  if(!geocoder){$('hint').textContent='Ubicación seleccionada. Activa Geocoding para mostrar el nombre de la calle.';return}
  geocoder.geocode({location:coords},(results,status)=>{
-  if(requestId!==geocodeRequest || (!adding&&!addingShelter&&!addingEvent))return;
+  if(requestId!==geocodeRequest || (!adding&&!addingShelter&&!addingEvent&&!locationChangeTarget))return;
   if(status==='OK' && results && results.length){
    const components=results[0].address_components||[];
    const get=t=>components.find(c=>c.types.includes(t))?.long_name||'';
