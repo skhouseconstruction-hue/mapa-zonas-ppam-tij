@@ -185,6 +185,32 @@ async function loadSharedData(){
  const data=await response.json();if(!validData(data))throw new Error('El archivo compartido no tiene un formato válido');
  state={...state,...data,shelters:Array.isArray(data.shelters)?data.shelters:[],events:Array.isArray(data.events)?data.events:[]};
 }
+let publicSyncTimer=null,publicSyncBusy=false,publicLastSnapshot='';
+function publicSnapshot(data){return JSON.stringify({name:data.name||'',routes:Array.isArray(data.routes)?data.routes:[],points:Array.isArray(data.points)?data.points:[],shelters:Array.isArray(data.shelters)?data.shelters:[],events:Array.isArray(data.events)?data.events:[]})}
+async function refreshPublicData(){
+ if(ADMIN_MODE||publicSyncBusy)return;
+ publicSyncBusy=true;
+ try{
+  const response=await fetch('./data.json?live='+Date.now(),{cache:'no-store'});
+  if(!response.ok)throw new Error('HTTP '+response.status);
+  const data=await response.json();
+  if(!validData(data))throw new Error('Datos compartidos no válidos');
+  const snapshot=publicSnapshot(data);
+  if(snapshot!==publicLastSnapshot){
+   state={...state,...data,shelters:Array.isArray(data.shelters)?data.shelters:[],events:Array.isArray(data.events)?data.events:[]};
+   publicLastSnapshot=snapshot;
+   refresh();
+  }
+ }catch(e){console.warn('No se pudo actualizar el mapa público:',e)}
+ finally{publicSyncBusy=false}
+}
+function startPublicAutoRefresh(){
+ if(ADMIN_MODE)return;
+ publicLastSnapshot=publicSnapshot(state);
+ clearInterval(publicSyncTimer);
+ publicSyncTimer=setInterval(refreshPublicData,10000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshPublicData()});
+}
 async function load(){
  try{
   const embedded=JSON.parse($('publishedData').textContent||'{}');
@@ -628,7 +654,7 @@ $('copySafi').onclick=async()=>{
 };
 $('importFile').onchange=e=>{if(!ADMIN_MODE)return;const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{try{const x=JSON.parse(reader.result);if(!Array.isArray(x.points))throw Error();state={...state,routes:Array.isArray(x.routes)?x.routes:[],points:x.points,shelters:Array.isArray(x.shelters)?x.shelters:[],events:Array.isArray(x.events)?x.events:[]};save();refresh();alert('Respaldo importado. Las ubicaciones aparecerán como zonas.')}catch(err){alert('El archivo no parece ser un respaldo válido.')}};reader.readAsText(f);e.target.value=''};
 
-load().then(()=>{configureMode();refresh();if(ADMIN_MODE&&githubToken())setGithubStatus('GitHub autorizado en este dispositivo ✓',true);if(GOOGLE_MAPS_API_KEY){connectGoogleMaps()}else{$('apiSetup').classList.remove('hidden');}});
+load().then(()=>{configureMode();refresh();if(!ADMIN_MODE)startPublicAutoRefresh();if(ADMIN_MODE&&githubToken())setGithubStatus('GitHub autorizado en este dispositivo ✓',true);if(GOOGLE_MAPS_API_KEY){connectGoogleMaps()}else{$('apiSetup').classList.remove('hidden');}});
 })();
 </script>
 </body>
