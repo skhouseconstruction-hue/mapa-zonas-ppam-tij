@@ -47,6 +47,16 @@
       "photo": null,
       "lat": 32.5149,
       "lng": -117.0382
+    },
+    {
+      "id": "mwiwxn3qxe61j",
+      "routeId": null,
+      "name": "prueba 14",
+      "description": "",
+      "note": "casa azul",
+      "photo": null,
+      "lat": 32.39741798420637,
+      "lng": -116.9725329743639
     }
   ],
   "shelters": [
