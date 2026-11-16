@@ -232,16 +232,9 @@ async function load(){
   const embedded=JSON.parse($('publishedData').textContent||'{}');
   if(validData(embedded))state={...state,...embedded,shelters:Array.isArray(embedded.shelters)?embedded.shelters:[],events:Array.isArray(embedded.events)?embedded.events:[]};
   try{await loadSharedData()}catch(e){console.warn('Se usará la copia incluida mientras data.json no esté disponible:',e)}
-  if(ADMIN_MODE){
-   const raw=localStorage.getItem(KEY);
-   if(raw){
-    const draft=JSON.parse(raw);
-    if(validData(draft)){
-     const useDraft=confirm('Se encontró un borrador guardado en este dispositivo. ¿Quieres cargar ese borrador en lugar de los datos compartidos?\n\nAceptar: usar el borrador de este dispositivo.\nCancelar: usar los datos compartidos de GitHub.');
-     if(useDraft)state={...state,...draft,shelters:Array.isArray(draft.shelters)?draft.shelters:[],events:Array.isArray(draft.events)?draft.events:[]};
-    }
-   }
-  }
+  // Los datos compartidos de GitHub son la fuente principal. El borrador local
+  // se conserva como respaldo en localStorage, pero nunca sustituye automáticamente
+  // los datos compartidos ni muestra una pregunta al abrir el panel.
  }catch(e){console.warn('No se pudo cargar el mapa:',e)}
 }
 async function pushSharedData(){
