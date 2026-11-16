@@ -260,9 +260,11 @@ async function connectGitHub(){
   const response=await fetch('https://api.github.com/repos/'+GITHUB_REPO+'/contents/data.json?ref='+GITHUB_BRANCH,{headers:githubHeaders(token),cache:'no-store'});
   if(!response.ok)throw new Error(response.status===401||response.status===403?'Token inválido o sin permiso Contents: Read and write.':'No se pudo verificar el acceso a data.json ('+response.status+').');
   const remote=await response.json();
-  const remoteText=decodeURIComponent(escape(atob(String(remote.content||'').replace(/\\n/g,''))));
-  const remoteData=JSON.parse(remoteText);
-  const localText=JSON.stringify(state);
+  const remoteText=decodeURIComponent(escape(atob(String(remote.content||'').replace(/\n/g,''))));
+  const parsedRemote=JSON.parse(remoteText);
+  const remoteData={...parsedRemote,shelters:Array.isArray(parsedRemote.shelters)?parsedRemote.shelters:[],events:Array.isArray(parsedRemote.events)?parsedRemote.events:[]};
+  const localData={...state,shelters:Array.isArray(state.shelters)?state.shelters:[],events:Array.isArray(state.events)?state.events:[]};
+  const localText=JSON.stringify(localData);
   const remoteComparable=JSON.stringify(remoteData);
   if(localText!==remoteComparable){
    const useRemote=confirm('GitHub tiene una versión compartida que puede ser más reciente que los datos abiertos en este dispositivo.\n\nAceptar: cargar la versión de GitHub y no sobrescribirla.\nCancelar: detener la conexión para revisar tus datos locales.');
