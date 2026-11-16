@@ -629,28 +629,42 @@ $('addZone').onclick=()=>{if(ADMIN_MODE)startAdding()};
 $('selectZoneLocation').onclick=beginZoneLocationPick;
 // Los controles del selector compartido se asignan después de declarar sus tres flujos.
 function beginRecordLocationPick(type){
- if(!ADMIN_MODE||!map)return;
+ if(!ADMIN_MODE)return;
+ if(!map||!window.google?.maps){alert('El mapa todavía no está listo. Espera a que cargue e inténtalo de nuevo.');return;}
+ if(type!=='shelter'&&type!=='event')return;
  pickingRecordLocation=type;
  $(type==='shelter'?'shelterModalBack':'eventModalBack').classList.add('hidden');
  $('zonePickerPin').classList.remove('hidden');$('zonePickerActions').classList.remove('hidden');
- $('hint').textContent='Desplaza el mapa debajo del pin rosa hasta encontrar el punto exacto.';
+ $('hint').textContent='Desplaza y acerca el mapa debajo del pin rosa hasta encontrar el punto exacto.';
 }
 function cancelRecordLocationPick(){
  if(!pickingRecordLocation)return;
  const type=pickingRecordLocation;pickingRecordLocation=null;
  $('zonePickerPin').classList.add('hidden');$('zonePickerActions').classList.add('hidden');
  $(type==='shelter'?'shelterModalBack':'eventModalBack').classList.remove('hidden');
- $('hint').textContent='Puedes seguir completando el formulario y guardar sin ubicación.';
+ $('hint').textContent='Puedes seguir completando el formulario. No se cambió la ubicación.';
 }
 function confirmRecordLocationPick(){
  if(!pickingRecordLocation||!map)return;
- const type=pickingRecordLocation,c=map.getCenter();pendingCoords={lat:c.lat(),lng:c.lng()};
+ const type=pickingRecordLocation,c=map.getCenter();
+ pendingCoords={lat:c.lat(),lng:c.lng()};
+ const modal=$(type==='shelter'?'shelterModalBack':'eventModalBack');
+ const field=$(type==='shelter'?'shelterDesc':'eventAddress');
+ const coord=$(type==='shelter'?'shelterCoordText':'eventCoordText');
+ const btn=$(type==='shelter'?'selectShelterLocation':'selectEventLocation');
  $('zonePickerPin').classList.add('hidden');$('zonePickerActions').classList.add('hidden');
- $(type==='shelter'?'shelterModalBack':'eventModalBack').classList.remove('hidden');
- const field=$(type==='shelter'?'shelterDesc':'eventAddress'),coord=$(type==='shelter'?'shelterCoordText':'eventCoordText'),btn=$(type==='shelter'?'selectShelterLocation':'selectEventLocation');
- coord.textContent=`Coordenadas: ${pendingCoords.lat.toFixed(6)}, ${pendingCoords.lng.toFixed(6)}`;if(type==='shelter')btn.classList.add('hidden');else btn.textContent='⌖ Cambiar ubicación';
- pickingRecordLocation=null;const selected={lat:pendingCoords.lat,lng:pendingCoords.lng};
- if(geocoder&&(!field.value.trim()||field.value==='Buscando dirección…')){field.value='Buscando dirección…';geocoder.geocode({location:selected},(results,status)=>{if(!pendingCoords||pendingCoords.lat!==selected.lat||pendingCoords.lng!==selected.lng||field.value!=='Buscando dirección…')return;field.value=status==='OK'&&results&&results.length?(results[0].formatted_address||`${selected.lat.toFixed(6)}, ${selected.lng.toFixed(6)}`):`${selected.lat.toFixed(6)}, ${selected.lng.toFixed(6)}`;});}
+ modal.classList.remove('hidden');
+ coord.textContent=`Coordenadas: ${pendingCoords.lat.toFixed(6)}, ${pendingCoords.lng.toFixed(6)}`;
+ btn.textContent='⌖ Corregir ubicación';
+ pickingRecordLocation=null;
+ const selected={lat:pendingCoords.lat,lng:pendingCoords.lng};
+ field.value='Buscando dirección…';
+ if(geocoder){
+  geocoder.geocode({location:selected},(results,status)=>{
+   if(modal.classList.contains('hidden')||!pendingCoords||pendingCoords.lat!==selected.lat||pendingCoords.lng!==selected.lng||field.value!=='Buscando dirección…')return;
+   field.value=status==='OK'&&results&&results.length?(results[0].formatted_address||`${selected.lat.toFixed(6)}, ${selected.lng.toFixed(6)}`):`${selected.lat.toFixed(6)}, ${selected.lng.toFixed(6)}`;
+  });
+ }else field.value=`${selected.lat.toFixed(6)}, ${selected.lng.toFixed(6)}`;
  $('hint').textContent='Ubicación seleccionada. Puedes terminar de completar el formulario y guardar.';
 }
 $('cancelZoneLocation').onclick=()=>{if(pickingRecordLocation)cancelRecordLocationPick();else cancelZoneLocationPick();};
@@ -705,8 +719,8 @@ function openShelterModal(p=null){
  $('shelterPhoto').value='';$('shelterPhotoPreview').src=shelterPhotoData||'';
  $('shelterPhotoPreview').classList.toggle('hidden',!shelterPhotoData);$('removeShelterPhoto').classList.toggle('hidden',!shelterPhotoData);$('shelterCaptureEditor').classList.add('hidden');
  $('shelterCoordText').textContent=pendingCoords?`Coordenadas: ${pendingCoords.lat.toFixed(6)}, ${pendingCoords.lng.toFixed(6)}`:'Ubicación pendiente: puedes guardar el resguardo ahora y agregarla después.';
- $('selectShelterLocation').textContent='＋ Agregar ubicación';
- $('selectShelterLocation').classList.toggle('hidden',!!pendingCoords);
+ $('selectShelterLocation').textContent=pendingCoords?'⌖ Corregir ubicación':'＋ Agregar ubicación';
+ $('selectShelterLocation').classList.remove('hidden');
  $('correctShelterLocation').classList.toggle('hidden',!p||!pendingCoords);
  $('shelterModalBack').classList.remove('hidden');
 }
@@ -764,7 +778,7 @@ function openEventModal(p=null){
  $('eventPhoto').value='';$('eventPhotoPreview').src=eventPhotoData||'';
  $('eventPhotoPreview').classList.toggle('hidden',!eventPhotoData);$('removeEventPhoto').classList.toggle('hidden',!eventPhotoData);$('eventCaptureEditor').classList.add('hidden');
  $('eventCoordText').textContent=pendingCoords?`Coordenadas: ${pendingCoords.lat.toFixed(6)}, ${pendingCoords.lng.toFixed(6)}`:'Ubicación pendiente: puedes guardar el evento ahora y agregarla después.';
- $('selectEventLocation').textContent=pendingCoords?'⌖ Cambiar ubicación':'＋ Agregar ubicación';
+ $('selectEventLocation').textContent=pendingCoords?'⌖ Corregir ubicación':'＋ Agregar ubicación';
  $('changeEventLocation').classList.toggle('hidden',!p||!pendingCoords);
  $('eventModalBack').classList.remove('hidden');
 }
