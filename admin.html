@@ -512,7 +512,7 @@ function namedPinIcon(color,stroke){
 function renderMarkers(){
  if(!map||!window.google||!google.maps)return;
  Object.values(markers).forEach(m=>m.setMap(null));markers={};
- state.points.forEach(p=>{
+ state.points.filter(p=>Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))).forEach(p=>{
   const marker=new google.maps.Marker({
    position:{lat:Number(p.lat),lng:Number(p.lng)},map,title:p.name,
    icon:namedPinIcon('#dc2626','#991b1b'),
@@ -541,9 +541,9 @@ function openPointModal(p=null){
  editingId=p?.id||null;photoData=p?.photo||null;
  $('modalTitle').textContent=p?'Editar zona':'Nueva zona';
  $('pointName').value=p?.name||'';$('pointDesc').value=p?.description||'';$('pointNote').value=p?.note||'';
- $('selectZoneLocation').classList.toggle('hidden',!!p);
+ $('selectZoneLocation').classList.remove('hidden');
  $('pointDesc').placeholder=p?'Ubicación registrada':'Selecciona una ubicación en el mapa';
- $('coordText').textContent=p?`Coordenadas: ${(pendingCoords&&editingId===p.id?pendingCoords.lat:p.lat).toFixed(6)}, ${(pendingCoords&&editingId===p.id?pendingCoords.lng:p.lng).toFixed(6)}`:pendingCoords?`Coordenadas: ${pendingCoords.lat.toFixed(6)}, ${pendingCoords.lng.toFixed(6)}`:'Ubicación pendiente: pulsa «Agregar ubicación».';
+ $('coordText').textContent=(pendingCoords&&editingId===p?.id)?`Coordenadas: ${pendingCoords.lat.toFixed(6)}, ${pendingCoords.lng.toFixed(6)}`:p&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))?`Coordenadas: ${Number(p.lat).toFixed(6)}, ${Number(p.lng).toFixed(6)}`:'Ubicación pendiente: puedes guardarla ahora y agregarla después.';
  $('pointPhoto').value='';$('photoPreview').src=photoData||'';$('photoPreview').classList.toggle('hidden',!photoData);
  $('modalBack').classList.remove('hidden');
 }
@@ -673,10 +673,9 @@ $('cancelModal').onclick=()=>{
 $('savePoint').onclick=()=>{
  if(!ADMIN_MODE)return;
  const name=$('pointName').value.trim();if(!name){alert('Escribe el nombre de la zona.');return}
- if(editingId){const p=state.points.find(x=>x.id===editingId);if(p){p.name=name;p.description=$('pointDesc').value.trim();p.note=$('pointNote').value.trim();p.photo=photoData;}}
+ if(editingId){const p=state.points.find(x=>x.id===editingId);if(p){p.name=name;p.description=$('pointDesc').value.trim();p.note=$('pointNote').value.trim();p.photo=photoData;if(pendingCoords){p.lat=pendingCoords.lat;p.lng=pendingCoords.lng;}}}
  else {
-  if(!pendingCoords){alert('Primero pulsa «Agregar ubicación» y confirma el punto en el mapa.');return}
-  state.points.push({id:uid(),routeId:null,name,description:$('pointDesc').value.trim(),note:$('pointNote').value.trim(),photo:photoData,lat:pendingCoords.lat,lng:pendingCoords.lng});
+  state.points.push({id:uid(),routeId:null,name,description:$('pointDesc').value.trim(),note:$('pointNote').value.trim(),photo:photoData,lat:pendingCoords?pendingCoords.lat:null,lng:pendingCoords?pendingCoords.lng:null});
  }
  save();closeModal();
  if(placementMarker){placementMarker.setMap(null);placementMarker=null;}
