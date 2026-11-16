@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#172b4d">
+<meta name="app-build" content="admin-auto-update-20261115-01">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -846,16 +847,52 @@ installButton.addEventListener('click',async()=>{
  deferredInstallPrompt=null;installButton.classList.remove('visible');
 });
 window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;installButton.classList.remove('visible')});
+// Actualización automática del administrador: comprueba la versión publicada sin tocar los datos.
+let ppamUpdatePending=false,ppamUpdateCheckBusy=false;
+function ppamHasOpenEditor(){
+ return !!document.querySelector('.modal-back:not(.hidden)') ||
+  !!(document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName));
+}
+function ppamReloadWhenSafe(){
+ if(!ppamUpdatePending||ppamHasOpenEditor())return;
+ window.__ppamSwReloaded=true;
+ location.reload();
+}
+async function ppamCheckPublishedVersion(){
+ if(ppamUpdateCheckBusy||!navigator.onLine)return;
+ ppamUpdateCheckBusy=true;
+ try{
+  const response=await fetch('./admin.html?version_check='+Date.now(),{cache:'no-store',credentials:'same-origin'});
+  if(!response.ok)return;
+  const html=await response.text();
+  const match=html.match(/<meta\\s+name=["']app-build["']\\s+content=["']([^"']+)["']/i);
+  const current=document.querySelector('meta[name="app-build"]')?.content;
+  if(match&&current&&match[1]!==current){
+   ppamUpdatePending=true;
+   ppamReloadWhenSafe();
+  }
+ }catch(err){console.warn('No se pudo comprobar si hay una actualización:',err);}
+ finally{ppamUpdateCheckBusy=false;}
+}
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost')){
  window.addEventListener('load',async()=>{
   try{
    const registration=await navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'});
    await registration.update();
    navigator.serviceWorker.addEventListener('controllerchange',()=>{
-    if(!window.__ppamSwReloaded){window.__ppamSwReloaded=true;location.reload();}
+    ppamUpdatePending=true;ppamReloadWhenSafe();
    });
+   setInterval(()=>{registration.update().catch(()=>{});ppamCheckPublishedVersion();},60000);
+   window.addEventListener('focus',()=>{registration.update().catch(()=>{});ppamCheckPublishedVersion();ppamReloadWhenSafe();});
+   document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden){registration.update().catch(()=>{});ppamCheckPublishedVersion();ppamReloadWhenSafe();}
+   });
+   document.addEventListener('click',()=>{if(ppamUpdatePending)setTimeout(ppamReloadWhenSafe,250);},true);
   }catch(err){console.warn('No se pudo actualizar el modo de aplicación:',err);}
  });
+}else{
+ setInterval(ppamCheckPublishedVersion,60000);
+ window.addEventListener('focus',ppamCheckPublishedVersion);
 }
 if(ADMIN_MODE){$('connectGithub').addEventListener('click',connectGitHub);$('refreshData').addEventListener('click',manualRefreshShared);}
 load().then(async()=>{configureMode();refresh();if(ADMIN_MODE&&githubToken()){setGithubStatus('Revisando conexión con GitHub…');await refreshSharedFromGitHub();startGitHubSync()}if(GOOGLE_MAPS_API_KEY){connectGoogleMaps()}else{$('apiSetup').classList.remove('hidden');}});
