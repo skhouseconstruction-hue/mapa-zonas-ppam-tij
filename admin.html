@@ -236,7 +236,7 @@ let locationChangeTarget=null;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 function validData(x){return x&&Array.isArray(x.routes)&&Array.isArray(x.points)}
-let githubWriteTimer=null,githubWriteBusy=false,githubWritePending=false,githubDataSha=null,githubLastSyncedState=null,githubPollTimer=null;
+let githubWriteTimer=null,githubWriteBusy=false,githubWritePending=false,githubDataSha=null,githubLastSyncedState=null,githubPollTimer=null,sharedDataReady=false;
 const GITHUB_REPO='skhouseconstruction-hue/mapa-zonas-ppam-tij';
 const GITHUB_BRANCH='main';
 const GITHUB_TOKEN_KEY='ppam_github_token_persistent';
@@ -252,7 +252,7 @@ async function refreshSharedFromGitHub(silent=false){
    if(githubLastSyncedState!==null&&sharedSnapshot()!==githubLastSyncedState){setGithubStatus('Hay cambios locales pendientes. No se cargaron cambios externos para protegerlos.');return}
    const parsed=await decodeGitHubFile(remote,githubToken(),'sincronizar');
    state={...state,...parsed,shelters:Array.isArray(parsed.shelters)?parsed.shelters:[],events:Array.isArray(parsed.events)?parsed.events:[]};
-   githubDataSha=remote.sha;githubLastSyncedState=sharedSnapshot();
+   githubDataSha=remote.sha;githubLastSyncedState=sharedSnapshot();sharedDataReady=true;
    try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}
    refresh();setGithubStatus('Actualizado desde otro dispositivo ✓',true);
   }else if(!githubDataSha){
@@ -308,6 +308,7 @@ async function loadSharedData(){
  const response=await fetch('./data.json?ts='+Date.now(),{cache:'no-store'});
  if(!response.ok)throw new Error('No se pudo consultar data.json');
  const data=await response.json();if(!validData(data))throw new Error('El archivo compartido no tiene un formato válido');
+  sharedDataReady=true;
  state={...state,...data,shelters:Array.isArray(data.shelters)?data.shelters:[],events:Array.isArray(data.events)?data.events:[]};
 }
 async function load(){
@@ -322,6 +323,7 @@ async function load(){
 }
 async function pushSharedData(){
  if(!ADMIN_MODE||!githubToken())return;
+ if(!sharedDataReady){setGithubStatus('Publicación pausada: no se ha podido verificar data.json. Actualiza los datos compartidos antes de publicar.');return}
  if(githubWriteBusy){githubWritePending=true;return}
  githubWriteBusy=true;
  try{
@@ -335,7 +337,9 @@ async function pushSharedData(){
   const put=await fetch(url,{method:'PUT',headers:githubHeaders(token),body:JSON.stringify({message:'Actualizar datos del mapa PPAM-TIJ',content:encodeGithubContent(content),sha:current.sha,branch:GITHUB_BRANCH})});
   if(put.status===409||put.status===422)throw new Error('GitHub detectó un cambio simultáneo. Recarga los datos compartidos antes de volver a publicar para no sobrescribir cambios.');
   if(!put.ok){const detail=await readGitHubJson(put,'publicar los cambios').catch(()=>({}));throw new Error(detail.message||'No se pudieron publicar los cambios ('+put.status+').')}
-  const result=await readGitHubJson(put,'confirmar la publicación');githubDataSha=result.content?.sha||null;
+  const result=await readGitHubJson(put,'confirmar la publicación');
+  if(!result.content?.sha)throw new Error('GitHub no confirmó la nueva versión de data.json. No se marcaron los cambios como sincronizados.');
+  githubDataSha=result.content.sha;githubLastSyncedState=sharedSnapshot();sharedDataReady=true;
   setGithubStatus('Sincronizado con GitHub ✓',true);
  }catch(e){setGithubStatus('Pendiente: '+e.message);console.error(e)}
  finally{
@@ -371,7 +375,7 @@ async function connectGitHub(){
    state={...state,...remoteData,shelters:Array.isArray(remoteData.shelters)?remoteData.shelters:[],events:Array.isArray(remoteData.events)?remoteData.events:[]};
    refresh();
   }
-  githubDataSha=remote.sha;
+  githubDataSha=remote.sha;sharedDataReady=true;
   localStorage.setItem(GITHUB_TOKEN_KEY,token);
   githubLastSyncedState=sharedSnapshot();startGitHubSync();
   setGithubStatus('GitHub autorizado en este dispositivo ✓',true);
@@ -546,10 +550,15 @@ function namedPinIcon(color,stroke){
  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="40" height="52" viewBox="0 0 40 52"><path d="M20 1C9.5 1 1 9.5 1 20c0 14 19 31 19 31s19-17 19-31C39 9.5 30.5 1 20 1z" fill="'+color+'" stroke="'+stroke+'" stroke-width="2"/><circle cx="20" cy="20" r="7" fill="#fff" stroke="'+stroke+'" stroke-width="1.5"/></svg>';
  return {url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(40,52),anchor:new google.maps.Point(20,52),labelOrigin:new google.maps.Point(20,-7)};
 }
+function hasValidCoordinates(p){
+ if(!p||p.lat===null||p.lat===undefined||p.lng===null||p.lng===undefined||String(p.lat).trim()===''||String(p.lng).trim()==='')return false;
+ const lat=Number(p.lat),lng=Number(p.lng);
+ return Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=-90&&lat<=90&&lng>=-180&&lng<=180;
+}
 function renderMarkers(){
  if(!map||!window.google||!google.maps)return;
  Object.values(markers).forEach(m=>m.setMap(null));markers={};
- state.points.filter(p=>Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))).forEach(p=>{
+ state.points.filter(hasValidCoordinates).forEach(p=>{
   const marker=new google.maps.Marker({
    position:{lat:Number(p.lat),lng:Number(p.lng)},map,title:p.name,
    icon:namedPinIcon('#dc2626','#991b1b'),
@@ -560,7 +569,7 @@ function renderMarkers(){
   marker.addListener('click',()=>info.open({map,anchor:marker}));
   markers[p.id]=marker;
  });
- (state.shelters||[]).filter(p=>p.lat!=null&&p.lng!=null&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))).forEach(p=>{
+ (state.shelters||[]).filter(hasValidCoordinates).forEach(p=>{
   const marker=new google.maps.Marker({
    position:{lat:Number(p.lat),lng:Number(p.lng)},map,title:p.name,
    icon:namedPinIcon('#9333ea','#6b21a8'),
@@ -571,7 +580,7 @@ function renderMarkers(){
   marker.addListener('click',()=>info.open({map,anchor:marker}));
   markers['shelter_'+p.id]=marker;
  });
- (state.events||[]).filter(p=>p.lat!=null&&p.lng!=null&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))).forEach(p=>{const marker=new google.maps.Marker({position:{lat:Number(p.lat),lng:Number(p.lng)},map,title:p.name,icon:namedPinIcon('#e5ff00','#687500'),label:{text:String(p.name||''),color:'#667000',fontSize:'16px',fontWeight:'900'}});const navUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.lat+','+p.lng);const info=new google.maps.InfoWindow({content:`<div style="min-width:170px;max-width:240px"><strong>${esc(p.name)}</strong>${p.photo?`<br><img src="${p.photo}" alt="" style="width:100%;max-width:220px;max-height:140px;object-fit:cover;border-radius:7px;margin:6px 0">`:''}<div>${esc(p.address||'')}</div>${p.notes?`<div style="margin-top:7px;white-space:pre-wrap"><strong>Notas:</strong><br>${esc(p.notes)}</div>`:''}<br><a href="${navUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;background:#2563eb;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-weight:bold">Cómo llegar</a></div>`});marker.addListener('click',()=>info.open({map,anchor:marker}));markers['event_'+p.id]=marker;});
+ (state.events||[]).filter(hasValidCoordinates).forEach(p=>{const marker=new google.maps.Marker({position:{lat:Number(p.lat),lng:Number(p.lng)},map,title:p.name,icon:namedPinIcon('#e5ff00','#687500'),label:{text:String(p.name||''),color:'#667000',fontSize:'16px',fontWeight:'900'}});const navUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.lat+','+p.lng);const info=new google.maps.InfoWindow({content:`<div style="min-width:170px;max-width:240px"><strong>${esc(p.name)}</strong>${p.photo?`<br><img src="${p.photo}" alt="" style="width:100%;max-width:220px;max-height:140px;object-fit:cover;border-radius:7px;margin:6px 0">`:''}<div>${esc(p.address||'')}</div>${p.notes?`<div style="margin-top:7px;white-space:pre-wrap"><strong>Notas:</strong><br>${esc(p.notes)}</div>`:''}<br><a href="${navUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;background:#2563eb;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-weight:bold">Cómo llegar</a></div>`});marker.addListener('click',()=>info.open({map,anchor:marker}));markers['event_'+p.id]=marker;});
 }
 function refresh(){ $('mapName').value=state.name;renderZones();renderShelters();renderEvents();if(map&&window.google&&google.maps){renderMarkers();}}
 function openPointModal(p=null){
@@ -790,7 +799,7 @@ function startAddingEvent(){
  openEventModal();
  $('hint').textContent='Completa los datos del evento. Puedes agregar la ubicación ahora o después.';
 }
-$('removeEventPhoto').onclick=()=>{eventPhotoData=null;$('eventPhoto').value='';$('eventPhotoPreview').src='';$('eventPhotoPreview').classList.add('hidden');$('removeEventPhoto').classList.add('hidden')};$('removeEventPhoto').onclick=()=>{eventPhotoData=null;$('eventPhoto').value='';$('eventPhotoPreview').src='';$('eventPhotoPreview').classList.add('hidden');$('removeEventPhoto').classList.add('hidden')};$('addEvent').onclick=()=>{if(ADMIN_MODE)startAddingEvent()};$('selectEventLocation').onclick=()=>beginRecordLocationPick('event');$('cancelEvent').onclick=()=>{addingEvent=false;editingEventId=null;pickingRecordLocation=null;if(placementMarker){placementMarker.setMap(null);placementMarker=null;}pendingCoords=null;$('eventModalBack').classList.add('hidden');$('addEvent').textContent='＋ Agregar evento';map?.setOptions({draggableCursor:null});};$('saveEvent').onclick=()=>{if(!ADMIN_MODE)return;const name=$('eventName').value.trim();if(!name){alert('Escribe el nombre del evento.');return}const data={name,address:$('eventAddress').value.trim(),notes:$('eventNotes').value.trim(),photo:eventPhotoData};if(editingEventId){const p=(state.events||[]).find(x=>x.id===editingEventId);if(p){Object.assign(p,data);if(pendingCoords){p.lat=pendingCoords.lat;p.lng=pendingCoords.lng;}}}else{state.events=state.events||[];state.events.push({id:uid(),...data,lat:pendingCoords?.lat??null,lng:pendingCoords?.lng??null});}save();$('eventModalBack').classList.add('hidden');if(placementMarker){placementMarker.setMap(null);placementMarker=null;}pendingCoords=null;pickingRecordLocation=null;editingEventId=null;$('addEvent').textContent='＋ Agregar evento';refresh();setTab('events');$('hint').textContent='Evento guardado. Puedes agregar o completar su ubicación cuando quieras.';};$('eventsList').addEventListener('click',e=>{const b=e.target.closest('button[data-event-action]');if(!b)return;const p=(state.events||[]).find(x=>x.id===b.dataset.id);if(!p)return;if(b.dataset.eventAction==='focus'&&p.lat!=null&&p.lng!=null){map.setCenter({lat:Number(p.lat),lng:Number(p.lng)});map.setZoom(18);const m=markers['event_'+p.id];if(m)google.maps.event.trigger(m,'click');}if(b.dataset.eventAction==='directions')directionsToZone(p);if(b.dataset.eventAction==='edit'&&ADMIN_MODE)openEventModal(p);if(b.dataset.eventAction==='remove'&&ADMIN_MODE&&confirm(`¿Eliminar el evento “${p.name}”?`)){state.events=(state.events||[]).filter(x=>x.id!==p.id);save();refresh();}});
+$('removeEventPhoto').onclick=()=>{eventPhotoData=null;$('eventPhoto').value='';$('eventPhotoPreview').src='';$('eventPhotoPreview').classList.add('hidden');$('removeEventPhoto').classList.add('hidden')};$('addEvent').onclick=()=>{if(ADMIN_MODE)startAddingEvent()};$('selectEventLocation').onclick=()=>beginRecordLocationPick('event');$('cancelEvent').onclick=()=>{addingEvent=false;editingEventId=null;pickingRecordLocation=null;if(placementMarker){placementMarker.setMap(null);placementMarker=null;}pendingCoords=null;$('eventModalBack').classList.add('hidden');$('addEvent').textContent='＋ Agregar evento';map?.setOptions({draggableCursor:null});};$('saveEvent').onclick=()=>{if(!ADMIN_MODE)return;const name=$('eventName').value.trim();if(!name){alert('Escribe el nombre del evento.');return}const data={name,address:$('eventAddress').value.trim(),notes:$('eventNotes').value.trim(),photo:eventPhotoData};if(editingEventId){const p=(state.events||[]).find(x=>x.id===editingEventId);if(p){Object.assign(p,data);if(pendingCoords){p.lat=pendingCoords.lat;p.lng=pendingCoords.lng;}}}else{state.events=state.events||[];state.events.push({id:uid(),...data,lat:pendingCoords?.lat??null,lng:pendingCoords?.lng??null});}save();$('eventModalBack').classList.add('hidden');if(placementMarker){placementMarker.setMap(null);placementMarker=null;}pendingCoords=null;pickingRecordLocation=null;editingEventId=null;$('addEvent').textContent='＋ Agregar evento';refresh();setTab('events');$('hint').textContent='Evento guardado. Puedes agregar o completar su ubicación cuando quieras.';};$('eventsList').addEventListener('click',e=>{const b=e.target.closest('button[data-event-action]');if(!b)return;const p=(state.events||[]).find(x=>x.id===b.dataset.id);if(!p)return;if(b.dataset.eventAction==='focus'&&p.lat!=null&&p.lng!=null){map.setCenter({lat:Number(p.lat),lng:Number(p.lng)});map.setZoom(18);const m=markers['event_'+p.id];if(m)google.maps.event.trigger(m,'click');}if(b.dataset.eventAction==='directions')directionsToZone(p);if(b.dataset.eventAction==='edit'&&ADMIN_MODE)openEventModal(p);if(b.dataset.eventAction==='remove'&&ADMIN_MODE&&confirm(`¿Eliminar el evento “${p.name}”?`)){state.events=(state.events||[]).filter(x=>x.id!==p.id);save();refresh();}});
 let searchMarker=null, searchInfo=null;
 async function searchAddress(){
  const q=$('addressSearch').value.trim();if(!q){$('addressSearch').focus();return}
@@ -917,7 +926,7 @@ async function ppamCheckPublishedVersion(){
   const response=await fetch('./admin.html?version_check='+Date.now(),{cache:'no-store',credentials:'same-origin'});
   if(!response.ok)return;
   const html=await response.text();
-  const match=html.match(/<meta\\s+name=["']app-build["']\\s+content=["']([^"']+)["']/i);
+  const match=html.match(/<meta\s+name=["']app-build["']\s+content=["']([^"']+)["']/i);
   const current=document.querySelector('meta[name="app-build"]')?.content;
   if(match&&current&&match[1]!==current){
    ppamUpdatePending=true;
