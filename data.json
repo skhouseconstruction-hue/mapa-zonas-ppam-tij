@@ -49,6 +49,18 @@
       "lng": -117.0382
     }
   ],
-  "shelters": [],
+  "shelters": [
+    {
+      "id": "mwioy6ih3jahc",
+      "name": "Samuel Rivera de dios",
+      "description": "Av. Guillermo Prieto 3157, Gabilondo, 22044 Tijuana, B.C., México",
+      "photo": null,
+      "contact": "",
+      "phone": "6634535485",
+      "note": "casa",
+      "lat": 32.51432098314993,
+      "lng": -117.02034721679688
+    }
+  ],
   "events": []
 }
