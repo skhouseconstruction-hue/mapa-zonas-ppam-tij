@@ -915,7 +915,15 @@ installButton.addEventListener('click',async()=>{
 });
 window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;installButton.classList.remove('visible')});
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost')){
- window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(err=>console.warn('No se pudo activar el modo de aplicación:',err)));
+ window.addEventListener('load',async()=>{
+  try{
+   const registration=await navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'});
+   await registration.update();
+   navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(!window.__ppamSwReloaded){window.__ppamSwReloaded=true;location.reload();}
+   });
+  }catch(err){console.warn('No se pudo actualizar el modo de aplicación:',err);}
+ });
 }
 if(ADMIN_MODE){$('connectGithub').addEventListener('click',connectGitHub);$('refreshData').addEventListener('click',manualRefreshShared);}
 load().then(async()=>{configureMode();refresh();if(ADMIN_MODE&&githubToken()){setGithubStatus('Revisando conexión con GitHub…');await refreshSharedFromGitHub();startGitHubSync()}if(GOOGLE_MAPS_API_KEY){connectGoogleMaps()}else{$('apiSetup').classList.remove('hidden');}});
