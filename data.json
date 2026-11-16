@@ -352,5 +352,15 @@
       "lng": -116.950309375
     }
   ],
-  "events": []
+  "events": [
+    {
+      "id": "mwj04zx41z1yd",
+      "name": "casa dos",
+      "address": "",
+      "notes": "nada",
+      "photo": null,
+      "lat": null,
+      "lng": null
+    }
+  ]
 }
