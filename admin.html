@@ -658,42 +658,65 @@ $('searchResults').addEventListener('click',e=>{
  searchInfo.open({map,anchor:searchMarker});$('addressSearch').value=x.formatted_address;closeSearchPanel();
 });
 let currentLocationMarker=null,currentLocationAccuracy=null;
+function openMapCropper(sourceUrl, center){
+ const old=document.getElementById('mapCropOverlay');if(old)old.remove();
+ const overlay=document.createElement('div');overlay.id='mapCropOverlay';
+ overlay.style.cssText='position:fixed;inset:0;z-index:30000;background:#101827f5;display:flex;flex-direction:column;padding:12px;color:#fff;font:14px Arial,sans-serif';
+ overlay.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 2px 12px"><strong>Recorta la parte que deseas usar</strong><button id="cropCancel" style="padding:10px 14px;border:0;border-radius:8px">Cancelar</button></div><div style="font-size:12px;opacity:.85;padding-bottom:10px">Arrastra sobre la imagen para seleccionar el área. Puedes ajustar el recorte antes de continuar.</div><div id="cropStage" style="position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none"><img id="cropSource" alt="Captura del mapa" style="max-width:100%;max-height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none"><div id="cropShade" style="position:absolute;inset:0;pointer-events:none"></div><div id="cropRect" style="position:absolute;border:2px solid #fff;background:#ffffff22;box-shadow:0 0 0 9999px #0008;display:none;pointer-events:none"></div></div><div style="display:flex;gap:10px;padding-top:12px"><button id="cropReset" style="flex:1;padding:13px;border:0;border-radius:9px">Seleccionar de nuevo</button><button id="cropUse" style="flex:1;padding:13px;border:0;border-radius:9px;background:#2563eb;color:white;font-weight:bold">Usar recorte</button></div>';
+ document.body.appendChild(overlay);
+ const img=overlay.querySelector('#cropSource'),stage=overlay.querySelector('#cropStage'),rect=overlay.querySelector('#cropRect');
+ let box=null,drag=false,origin=null,display=null;
+ img.onload=()=>{const ir=img.getBoundingClientRect(),sr=stage.getBoundingClientRect();display={left:ir.left-sr.left,top:ir.top-sr.top,width:ir.width,height:ir.height};};
+ img.src=sourceUrl;
+ const point=e=>{const r=stage.getBoundingClientRect();return{x:Math.max(display.left,Math.min(display.left+display.width,e.clientX-r.left)),y:Math.max(display.top,Math.min(display.top+display.height,e.clientY-r.top))};};
+ stage.addEventListener('pointerdown',e=>{if(!display)return;stage.setPointerCapture(e.pointerId);origin=point(e);box={x:origin.x,y:origin.y,w:0,h:0};drag=true;rect.style.display='block';});
+ stage.addEventListener('pointermove',e=>{if(!drag||!origin)return;const p=point(e);box={x:Math.min(origin.x,p.x),y:Math.min(origin.y,p.y),w:Math.abs(p.x-origin.x),h:Math.abs(p.y-origin.y)};Object.assign(rect.style,{left:box.x+'px',top:box.y+'px',width:box.w+'px',height:box.h+'px'});});
+ const stop=()=>{drag=false;};stage.addEventListener('pointerup',stop);stage.addEventListener('pointercancel',stop);
+ overlay.querySelector('#cropReset').onclick=()=>{box=null;rect.style.display='none';};
+ overlay.querySelector('#cropCancel').onclick=()=>{overlay.remove();};
+ overlay.querySelector('#cropUse').onclick=()=>{
+  if(!display||!box||box.w<12||box.h<12){alert('Selecciona con el dedo o el mouse el área que deseas recortar.');return;}
+  const sx=img.naturalWidth/img.getBoundingClientRect().width,sy=img.naturalHeight/img.getBoundingClientRect().height;
+  const canvas=document.createElement('canvas');canvas.width=Math.round(box.w*sx);canvas.height=Math.round(box.h*sy);
+  canvas.getContext('2d').drawImage(img,Math.round((box.x-display.left)*sx),Math.round((box.y-display.top)*sy),canvas.width,canvas.height,0,0,canvas.width,canvas.height);
+  photoData=canvas.toDataURL('image/jpeg',.88);pendingCoords={lat:center.lat(),lng:center.lng()};
+  editingId=null;adding=false;$('pointName').value='';$('pointDesc').value='';$('pointNote').value='';
+  $('modalTitle').textContent='Nueva zona';$('pointPhoto').value='';$('photoPreview').src=photoData;$('photoPreview').classList.remove('hidden');
+  $('coordText').textContent='Coordenadas del centro del mapa: '+pendingCoords.lat.toFixed(6)+', '+pendingCoords.lng.toFixed(6);
+  overlay.remove();$('modalBack').classList.remove('hidden');
+ };
+}
 $('captureLocation').onclick=async()=>{
  if(!ADMIN_MODE)return;
  if(!map||!window.google||!google.maps){alert('El mapa todavía no está listo.');return}
- if(!navigator.mediaDevices?.getDisplayMedia){alert('Este navegador no permite capturar una pestaña. Abre el panel en la versión más reciente de Google Chrome en computadora para usar esta función.');return}
  const center=map.getCenter();if(!center){alert('No hay una ubicación visible para capturar.');return}
+ if(!navigator.mediaDevices?.getDisplayMedia){
+  const picker=document.createElement('input');picker.type='file';picker.accept='image/*';picker.onchange=()=>{
+   const file=picker.files?.[0];if(!file)return;const url=URL.createObjectURL(file);
+   openMapCropper(url,center);
+  };
+  alert('En este iPad el navegador no permite capturar directamente la pantalla desde la página. Toma una captura de pantalla del mapa con los botones del iPad y, al continuar, selecciónala en Fotos para recortarla.');
+  picker.click();return;
+ }
  let stream=null;
  try{
   stream=await navigator.mediaDevices.getDisplayMedia({video:{displaySurface:'browser'},audio:false});
   const video=document.createElement('video');video.srcObject=stream;video.muted=true;video.playsInline=true;
   await new Promise((resolve,reject)=>{video.onloadedmetadata=resolve;video.onerror=reject;});
-  await video.play();
-  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  await video.play();await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
   const mapRect=$('map').getBoundingClientRect();
   const scaleX=video.videoWidth/window.innerWidth,scaleY=video.videoHeight/window.innerHeight;
   const sx=Math.max(0,Math.round(mapRect.left*scaleX)),sy=Math.max(0,Math.round(mapRect.top*scaleY));
   const sw=Math.min(video.videoWidth-sx,Math.round(mapRect.width*scaleX)),sh=Math.min(video.videoHeight-sy,Math.round(mapRect.height*scaleY));
-  if(sw<2||sh<2)throw new Error('No se pudo identificar el área del mapa en la captura. Comparte la pestaña actual de Chrome.');
-  const canvas=document.createElement('canvas');canvas.width=sw;canvas.height=sh;
-  const ctx=canvas.getContext('2d');ctx.drawImage(video,sx,sy,sw,sh,0,0,sw,sh);
+  if(sw<2||sh<2)throw new Error('No se pudo identificar el área del mapa. Elige compartir la pestaña actual del navegador.');
+  const canvas=document.createElement('canvas');canvas.width=sw;canvas.height=sh;canvas.getContext('2d').drawImage(video,sx,sy,sw,sh,0,0,sw,sh);
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw new Error('No se pudo generar la captura.');
   stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;
-  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
-  if(!blob)throw new Error('No se pudo generar la imagen PNG.');
-  const usePhoto=confirm('Captura del mapa realizada. ¿Deseas usar esta imagen como fotografía de una zona?\\n\\nAceptar: abrir el registro y colocar la captura como fotografía.\\nCancelar: descartar la captura sin guardarla.');
-  if(!usePhoto)return;
-  pendingCoords={lat:center.lat(),lng:center.lng()};
-  photoData=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob);});
-  editingId=null;adding=false;
-  $('pointName').value='';$('pointDesc').value='';$('pointNote').value='';
-  $('modalTitle').textContent='Nueva zona';
-  $('pointPhoto').value='';$('photoPreview').src=photoData;$('photoPreview').classList.remove('hidden');
-  $('coordText').textContent='Coordenadas del centro del mapa: '+pendingCoords.lat.toFixed(6)+', '+pendingCoords.lng.toFixed(6);
-  $('modalBack').classList.remove('hidden');
+  const url=URL.createObjectURL(blob);openMapCropper(url,center);
  }catch(err){
   if(stream)stream.getTracks().forEach(t=>t.stop());
   if(err?.name==='NotAllowedError')return;
-  alert('No se pudo capturar el mapa: '+(err?.message||err));
+  alert('No se pudo capturar la pantalla: '+(err?.message||err));
  }
 };
 $('locate').onclick=()=>{
