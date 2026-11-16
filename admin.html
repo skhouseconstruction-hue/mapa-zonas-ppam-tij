@@ -389,6 +389,7 @@ function configureMode(){
  $('addShelter').classList.toggle('hidden',!ADMIN_MODE);
  $('addEvent').classList.toggle('hidden',!ADMIN_MODE);
  $('publishHtml').classList.toggle('hidden',!ADMIN_MODE);
+ $('refreshData').classList.toggle('hidden',!ADMIN_MODE);
  $('mapName').readOnly=!ADMIN_MODE;
  $('mapName').style.borderBottomColor=ADMIN_MODE?'#ffffff55':'transparent';
  $('hint').textContent=ADMIN_MODE?'Modo administrador: agrega zonas y publica el HTML actualizado.':'Selecciona una zona o un marcador para consultar su fotografía, información y cómo llegar.';
