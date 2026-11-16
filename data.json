@@ -39,6 +39,18 @@
       "lng": -117.12358474745015
     }
   ],
-  "shelters": [],
+  "shelters": [
+    {
+      "id": "mwiv89nydeu63",
+      "name": "Samuel Rivera de dios",
+      "description": "P.º Costero 626, Playas de Tijuana, Playas De Tijuana, 22504 Tijuana, B.C., México",
+      "photo": null,
+      "contact": "ricardo",
+      "phone": "6634535485",
+      "note": "",
+      "lat": 32.53043105608647,
+      "lng": -117.12358474745015
+    }
+  ],
   "events": []
 }
