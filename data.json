@@ -351,6 +351,15 @@
       "photo": null,
       "lat": 32.53043105608647,
       "lng": -117.12358474745015
+    },
+    {
+      "id": "mwiyi3nvi83rq",
+      "name": "reuniones",
+      "address": "",
+      "notes": "",
+      "photo": null,
+      "lat": null,
+      "lng": null
     }
   ]
 }
