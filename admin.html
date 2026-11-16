@@ -298,6 +298,7 @@ async function connectGitHub(){
   }
   githubDataSha=remote.sha;
   localStorage.setItem(GITHUB_TOKEN_KEY,token);
+  githubLastSyncedState=sharedSnapshot();startGitHubSync();
   setGithubStatus('GitHub autorizado en este dispositivo ✓',true);
   if(confirm('Autorización correcta. ¿Quieres publicar ahora los datos que tienes abiertos en este dispositivo?')){
    await pushSharedData();
