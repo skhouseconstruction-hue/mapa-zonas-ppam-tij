@@ -183,7 +183,7 @@ body.admin-mode .map-hint{display:none!important}
     <h3>HTML para incorporar el mapa en SAFI</h3>
     <div class="safi-tabs" role="tablist" aria-label="Opciones HTML">
       <button id="safiAddressTab" class="safi-tab active" type="button" role="tab" aria-selected="true">Dirección HTML</button>
-      <button id="safiDownloadTab" class="safi-tab" type="button" role="tab" aria-selected="false">Descargar archivo</button>
+      <button id="safiDownloadTab" class="safi-tab" type="button" role="tab" aria-selected="false">Descargar index.html</button>
     </div>
     <section id="safiAddressPanel">
       <p class="muted">Esta es la dirección HTML para incorporar el mapa en SAFI. No se descargará ningún archivo al generar esta dirección.</p>
@@ -192,8 +192,8 @@ body.admin-mode .map-hint{display:none!important}
       <div class="modal-actions"><button id="closeSafi">Cerrar</button><button class="primary" id="copySafi">Copiar código HTML</button></div>
     </section>
     <section id="safiDownloadPanel" class="hidden">
-      <p class="muted">Aquí puedes descargar manualmente el archivo HTML actualizado cuando lo necesites. Abrir esta pestaña no inicia ninguna descarga.</p>
-      <div class="modal-actions"><button id="closeSafiDownload">Cerrar</button><button class="primary" id="downloadSafiHtml">Descargar archivo HTML</button></div>
+      <p class="muted">Aquí puedes descargar el archivo index.html generado con los datos actuales del mapa. La descarga solo comienza cuando pulses el botón.</p>
+      <div class="modal-actions"><button id="closeSafiDownload">Cerrar</button><button class="primary" id="downloadSafiHtml">Descargar index.html</button></div>
     </section>
   </div>
 </div>
@@ -819,7 +819,7 @@ $('closeSafiDownload').onclick=()=>$('safiBack').classList.add('hidden');
 $('downloadSafiHtml').onclick=()=>{
  if(!generatedHtmlBlob){alert('Primero pulsa «Generar HTML actualizado para SAFI».');return}
  const url=URL.createObjectURL(generatedHtmlBlob),a=document.createElement('a');
- a.href=url;a.download='Mapa_Tijuana_Google_Publicado.html';a.click();
+ a.href=url;a.download='index.html';a.click();
  setTimeout(()=>URL.revokeObjectURL(url),3000);
 };
 $('copySafi').onclick=async()=>{
