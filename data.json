@@ -329,6 +329,18 @@
       "lng": -116.83706793488349
     }
   ],
-  "shelters": [],
+  "shelters": [
+    {
+      "id": "mwiz1ijkf0c0a",
+      "name": "playas de tijuana",
+      "description": "",
+      "photo": null,
+      "contact": "ricardo",
+      "phone": "6634535485",
+      "note": "casanegra",
+      "lat": null,
+      "lng": null
+    }
+  ],
   "events": []
 }
