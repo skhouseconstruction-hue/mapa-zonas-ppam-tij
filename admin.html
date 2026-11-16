@@ -69,6 +69,7 @@ body.admin-mode .map-hint{display:none!important}
 .modal{background:#fff;border-radius:14px;padding:18px;width:min(440px,100%);max-height:90vh;overflow:auto;box-shadow:0 20px 60px #0003}
 .modal h3{font-size:18px}.field{margin:12px 0}.field label{display:block;font-weight:700;margin-bottom:5px}
 .preview{width:100%;max-height:170px;object-fit:cover;border-radius:8px;margin-top:8px}
+.safi-tabs{display:flex;gap:8px;margin:14px 0;border-bottom:1px solid var(--line)}.safi-tab{flex:1;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--muted);padding:10px 6px}.safi-tab.active{color:var(--blue);border-bottom-color:var(--blue);background:#f5f8ff}
 .capture-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.capture-editor{margin-top:10px;padding:10px;border:1px solid #d8e0ec;border-radius:10px;background:#f8fafc}.crop-stage{position:relative;display:inline-block;max-width:100%;line-height:0;touch-action:none;user-select:none;-webkit-user-select:none}.crop-stage img{display:block;max-width:100%;max-height:42vh;width:auto;height:auto;pointer-events:none}.crop-frame{position:absolute;border:2px solid #2563eb;box-shadow:0 0 0 9999px #0f172a88;cursor:move;touch-action:none}.crop-handle{position:absolute;width:22px;height:22px;right:-9px;bottom:-9px;border:2px solid #fff;border-radius:50%;background:#2563eb;box-shadow:0 1px 5px #0005;cursor:nwse-resize;touch-action:none}.crop-editor-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}.capture-help{font-size:12px;color:#64748b;margin:6px 0 0}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 .footer{padding:10px 14px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
@@ -180,10 +181,20 @@ body.admin-mode .map-hint{display:none!important}
 <div class="modal-back hidden" id="safiBack">
   <div class="modal">
     <h3>HTML para incorporar el mapa en SAFI</h3>
-    <p class="muted">Se descargó el mapa público actualizado. Para que esta dirección funcione, primero sube ese archivo a tu repositorio de GitHub con el nombre <strong>index.html</strong>, reemplazando el anterior.</p>
-    <div class="field"><label for="safiIframe">Código para pegar en SAFI → Incorporar un mapa → Fuente HTML</label><textarea id="safiIframe" rows="4" readonly></textarea></div>
-    <div class="muted" style="margin-top:8px">La dirección es fija. Cuando actualices el archivo index.html en GitHub Pages, SAFI mostrará la versión nueva sin cambiar este código.</div>
-    <div class="modal-actions"><button id="closeSafi">Cerrar</button><button class="primary" id="copySafi">Copiar código HTML</button></div>
+    <div class="safi-tabs" role="tablist" aria-label="Opciones HTML">
+      <button id="safiAddressTab" class="safi-tab active" type="button" role="tab" aria-selected="true">Dirección HTML</button>
+      <button id="safiDownloadTab" class="safi-tab" type="button" role="tab" aria-selected="false">Descargar archivo</button>
+    </div>
+    <section id="safiAddressPanel">
+      <p class="muted">Esta es la dirección HTML para incorporar el mapa en SAFI. No se descargará ningún archivo al generar esta dirección.</p>
+      <div class="field"><label for="safiIframe">Código para pegar en SAFI → Incorporar un mapa → Fuente HTML</label><textarea id="safiIframe" rows="4" readonly></textarea></div>
+      <div class="muted" style="margin-top:8px">La dirección es fija. Cuando publiques una versión nueva en GitHub Pages, SAFI mostrará la actualización sin cambiar este código.</div>
+      <div class="modal-actions"><button id="closeSafi">Cerrar</button><button class="primary" id="copySafi">Copiar código HTML</button></div>
+    </section>
+    <section id="safiDownloadPanel" class="hidden">
+      <p class="muted">Aquí puedes descargar manualmente el archivo HTML actualizado cuando lo necesites. Abrir esta pestaña no inicia ninguna descarga.</p>
+      <div class="modal-actions"><button id="closeSafiDownload">Cerrar</button><button class="primary" id="downloadSafiHtml">Descargar archivo HTML</button></div>
+    </section>
   </div>
 </div>
 
@@ -771,9 +782,17 @@ $('locate').onclick=()=>{
 };
 $('mapName').addEventListener('change',()=>{if(!ADMIN_MODE)return;state.name=$('mapName').value.trim()||'Mapa de zonas PPAM-TIJ';save();$('mapName').value=state.name});
 $('exportData').onclick=()=>{if(!ADMIN_MODE)return;const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='respaldo_mapa.json';a.click();URL.revokeObjectURL(a.href)};
-$('publishHtml').onclick=()=>{
- if(!ADMIN_MODE)return;
- if(!GOOGLE_MAPS_API_KEY){alert('Primero conecta Google Maps con tu clave API.');return}
+let generatedHtmlBlob=null;
+function setSafiTab(tab){
+ const address=tab==='address';
+ $('safiAddressPanel').classList.toggle('hidden',!address);
+ $('safiDownloadPanel').classList.toggle('hidden',address);
+ $('safiAddressTab').classList.toggle('active',address);
+ $('safiDownloadTab').classList.toggle('active',!address);
+ $('safiAddressTab').setAttribute('aria-selected',String(address));
+ $('safiDownloadTab').setAttribute('aria-selected',String(!address));
+}
+function buildUpdatedPublicHtml(){
  const clone=document.documentElement.cloneNode(true);
  const dataTag=clone.querySelector('#publishedData');
  dataTag.textContent=JSON.stringify(state).replace(/</g,'\\u003c');
@@ -782,15 +801,27 @@ $('publishHtml').onclick=()=>{
   .replace('const ADMIN_MODE=true; // Archivo privado de administración; no subir este archivo a la aplicación pública.','const ADMIN_MODE=false; // Modo de consulta para usuarios.')
   .replace("let GOOGLE_MAPS_API_KEY=localStorage.getItem(GOOGLE_KEY_STORAGE)||'';",'let GOOGLE_MAPS_API_KEY='+JSON.stringify(GOOGLE_MAPS_API_KEY)+';');
  clone.querySelector('#apiSetup')?.classList.add('hidden');
- const blob=new Blob(['<!doctype html>\\n'+clone.outerHTML],{type:'text/html;charset=utf-8'});
- const url=URL.createObjectURL(blob);const a=document.createElement('a');
- a.href=url;a.download='Mapa_Tijuana_Google_Publicado.html';a.click();
- setTimeout(()=>URL.revokeObjectURL(url),1500);
+ return new Blob(['<!doctype html>\\n'+clone.outerHTML],{type:'text/html;charset=utf-8'});
+}
+$('publishHtml').onclick=()=>{
+ if(!ADMIN_MODE)return;
+ if(!GOOGLE_MAPS_API_KEY){alert('Primero conecta Google Maps con tu clave API.');return}
+ generatedHtmlBlob=buildUpdatedPublicHtml();
  const publicUrl='https://skhouseconstruction-hue.github.io/mapa-zonas-ppam-tij/';
- $('safiIframe').value='<iframe src=\"'+publicUrl+'\" title=\"Mapa de zonas PPAM-TIJ\" width=\"100%\" height=\"900\" style=\"display:block;width:100%;height:100vh;min-height:700px;border:0\" loading=\"lazy\" allowfullscreen></iframe>';
+ $('safiIframe').value='<iframe src="'+publicUrl+'" title="Mapa de zonas PPAM-TIJ" width="100%" height="900" style="display:block;width:100%;height:100vh;min-height:700px;border:0" loading="lazy" allowfullscreen></iframe>';
+ setSafiTab('address');
  $('safiBack').classList.remove('hidden');
 };
+$('safiAddressTab').onclick=()=>setSafiTab('address');
+$('safiDownloadTab').onclick=()=>setSafiTab('download');
 $('closeSafi').onclick=()=>$('safiBack').classList.add('hidden');
+$('closeSafiDownload').onclick=()=>$('safiBack').classList.add('hidden');
+$('downloadSafiHtml').onclick=()=>{
+ if(!generatedHtmlBlob){alert('Primero pulsa «Generar HTML actualizado para SAFI».');return}
+ const url=URL.createObjectURL(generatedHtmlBlob),a=document.createElement('a');
+ a.href=url;a.download='Mapa_Tijuana_Google_Publicado.html';a.click();
+ setTimeout(()=>URL.revokeObjectURL(url),3000);
+};
 $('copySafi').onclick=async()=>{
  try{await navigator.clipboard.writeText($('safiIframe').value);alert('Código HTML copiado. Ya puedes pegarlo en SAFI.');}
  catch(e){$('safiIframe').focus();$('safiIframe').select();alert('Selecciona y copia el código que aparece en el recuadro.');}
