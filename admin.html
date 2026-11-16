@@ -188,7 +188,7 @@ body.admin-mode .map-hint{display:none!important}
     <div class="field"><label for="shelterPhoto">Fotografía del resguardo</label><input id="shelterPhoto" type="file" accept="image/*"><button type="button" id="removeShelterPhoto" class="hidden" style="margin-top:7px">Quitar fotografía</button><div class="muted">Puedes seleccionar una fotografía desde tu dispositivo o capturar la pantalla y recortarla.</div><div class="capture-actions"><button id="captureShelter" type="button">Capturar pantalla</button></div><p class="capture-help">Selecciona la ventana o pestaña donde se muestra el mapa.</p><img id="shelterPhotoPreview" class="preview hidden" alt="Vista previa del resguardo"><div id="shelterCaptureEditor" class="capture-editor hidden"><p class="capture-help">Ajusta el recorte arrastrando el marco.</p><div id="shelterCropStage" class="crop-stage"><img id="shelterCropImage" alt="Imagen para recortar"><div id="shelterCropFrame" class="crop-frame"><span class="crop-handle"></span></div></div><div class="crop-editor-actions"><button id="cancelShelterCrop" type="button">Cancelar</button><button id="useShelterCrop" class="primary" type="button">Usar recorte</button></div></div></div>
     <div class="field"><label for="shelterContact">Contacto del resguardo</label><input id="shelterContact" type="text" placeholder="Nombre de la persona responsable"></div>
     <div class="field"><label for="shelterPhone">Teléfono de contacto</label><input id="shelterPhone" type="text" inputmode="tel" placeholder="Teléfono"></div><div class="field"><label for="shelterNote">Nota / referencia</label><textarea id="shelterNote" rows="3" placeholder="Agrega indicaciones o referencias para identificar el resguardo."></textarea></div>
-    <div class="field"><button id="selectShelterLocation" type="button">＋ Agregar ubicación</button><div class="muted" id="shelterCoordText">Ubicación pendiente: puedes guardar el resguardo ahora y agregarla después.</div></div>
+    <div class="field"><button id="selectShelterLocation" type="button">＋ Agregar ubicación</button><div class="muted" id="shelterCoordText">Ubicación pendiente: puedes guardar el resguardo ahora y agregarla después.</div><button id="correctShelterLocation" type="button" class="change-location-button hidden">⌖ Corregir ubicación</button></div>
     <div class="modal-actions"><button id="cancelShelter">Cancelar</button><button class="primary" id="saveShelter">Guardar resguardo</button></div>
   </div>
 </div>
@@ -386,6 +386,10 @@ function finishLocationChange(confirmed){
   const list=target.type==='zone'?state.points:target.type==='shelter'?(state.shelters||[]):(state.events||[]);
   const record=list.find(item=>item.id===target.id);
   if(!record){alert('No se encontró el registro que quieres mover.');return;}
+  if(target.type==='shelter'){
+   record.lat=pendingCoords.lat;record.lng=pendingCoords.lng;
+   save();
+  }
  }
  if(placementMarker){placementMarker.setMap(null);placementMarker=null;}
  locationChangeTarget=null;adding=false;addingShelter=false;addingEvent=false;
@@ -673,6 +677,7 @@ function openShelterModal(p=null){
  $('shelterCoordText').textContent=pendingCoords?`Coordenadas: ${pendingCoords.lat.toFixed(6)}, ${pendingCoords.lng.toFixed(6)}`:'Ubicación pendiente: puedes guardar el resguardo ahora y agregarla después.';
  $('selectShelterLocation').textContent='＋ Agregar ubicación';
  $('selectShelterLocation').classList.toggle('hidden',!!pendingCoords);
+ $('correctShelterLocation').classList.toggle('hidden',!p||!pendingCoords);
  $('shelterModalBack').classList.remove('hidden');
 }
 function startAddingShelter(){
@@ -687,6 +692,7 @@ $('addShelter').onclick=()=>{if(ADMIN_MODE)startAddingShelter()};
 $('removeShelterPhoto').onclick=()=>{shelterPhotoData=null;$('shelterPhoto').value='';$('shelterPhotoPreview').src='';$('shelterPhotoPreview').classList.add('hidden');$('removeShelterPhoto').classList.add('hidden')};
 $('cancelShelter').onclick=()=>{addingShelter=false;editingShelterId=null;pickingRecordLocation=null;$('zonePickerPin').classList.add('hidden');$('zonePickerActions').classList.add('hidden');if(placementMarker){placementMarker.setMap(null);placementMarker=null;}pendingCoords=null;$('shelterModalBack').classList.add('hidden');$('addShelter').textContent='＋ Agregar resguardo';map?.setOptions({draggableCursor:null});};
 $('selectShelterLocation').onclick=()=>beginRecordLocationPick('shelter');
+$('correctShelterLocation').onclick=()=>{if(ADMIN_MODE&&editingShelterId)startLocationChange('shelter',editingShelterId);};
 $('saveShelter').onclick=()=>{
  if(!ADMIN_MODE)return;
  const name=$('shelterName').value.trim();if(!name){alert('Escribe el nombre del resguardo.');return}
