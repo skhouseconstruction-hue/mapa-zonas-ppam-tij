@@ -1,5 +1,5 @@
 'use strict';
-const CACHE_NAME='ppam-tij-admin-v22';
+const CACHE_NAME='ppam-tij-admin-v23';
 const APP_FILES=['./admin.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-192.svg','./icon-512.svg'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_FILES)).then(()=>self.skipWaiting()));
@@ -18,8 +18,9 @@ self.addEventListener('fetch',event=>{
     return;
   }
   if(request.mode==='navigate'){
-    event.respondWith(fetch(request).then(response=>{
-      const copy=response.clone();caches.open(CACHE_NAME).then(cache=>cache.put('./admin.html',copy));return response;
+    event.respondWith(fetch(new Request(request,{cache:'no-store'})).then(response=>{
+      if(response&&response.ok){const copy=response.clone();caches.open(CACHE_NAME).then(cache=>cache.put('./admin.html',copy));}
+      return response;
     }).catch(()=>caches.match('./admin.html')));
     return;
   }
