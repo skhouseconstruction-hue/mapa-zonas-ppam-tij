@@ -587,32 +587,51 @@ async function captureMapScreen(){
   alert('Este navegador no permite capturar la pantalla desde la aplicación. Toma una captura del dispositivo y selecciónala en «Fotografía de la zona».');
   return;
  }
- let stream=null,oldOptions={addressControl:true,linksControl:true,panControl:true,zoomControl:true,enableCloseButton:true};
+ let stream=null;
+ const oldOptions={addressControl:true,linksControl:true,panControl:true,zoomControl:true,enableCloseButton:true};
+ let captureModeStarted=false;
+ const restoreCaptureView=()=>{
+  document.body.classList.remove('streetview-capture-mode');
+  if(panorama)panorama.setOptions(oldOptions);
+  if(window.google&&google.maps&&map)google.maps.event.trigger(map,'resize');
+ };
  try{
-  stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:1},audio:false});
-  const video=document.createElement('video');video.muted=true;video.playsInline=true;video.srcObject=stream;
-  await new Promise((resolve,reject)=>{video.onloadedmetadata=resolve;video.onerror=reject;});
-  await video.play();
+  // Ocultar primero el formulario y ampliar Street View ANTES de abrir el selector de Chrome.
   document.body.classList.add('streetview-capture-mode');
+  captureModeStarted=true;
   panorama.setOptions({addressControl:false,linksControl:false,panControl:false,zoomControl:false,enableCloseButton:false});
   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-  await new Promise(resolve=>setTimeout(resolve,250));
+  await new Promise(resolve=>setTimeout(resolve,450));
+  // En este momento el usuario ya ve únicamente el mapa al elegir qué ventana compartir.
+  stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:2},audio:false});
+  const video=document.createElement('video');
+  video.muted=true;video.playsInline=true;video.srcObject=stream;
+  await new Promise((resolve,reject)=>{
+   video.onloadedmetadata=resolve;
+   video.onerror=()=>reject(new Error('No se pudo iniciar la vista previa de la captura.'));
+  });
+  await video.play();
+  // Esperar a que llegue un fotograma posterior a la ocultación de la interfaz.
+  if(video.requestVideoFrameCallback){
+   await new Promise(resolve=>video.requestVideoFrameCallback(()=>resolve()));
+   await new Promise(resolve=>video.requestVideoFrameCallback(()=>resolve()));
+  }else{
+   await new Promise(resolve=>setTimeout(resolve,900));
+  }
   const track=stream.getVideoTracks()[0],settings=track.getSettings();
   const width=video.videoWidth||settings.width,height=video.videoHeight||settings.height;
   if(!width||!height)throw new Error('No se pudo obtener la imagen de Street View.');
   const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
-  canvas.getContext('2d').drawImage(video,0,0,width,height);
+  const ctx=canvas.getContext('2d');
+  ctx.drawImage(video,0,0,width,height);
   const captured=canvas.toDataURL('image/jpeg',.94);
-  document.body.classList.remove('streetview-capture-mode');
-  panorama.setOptions(oldOptions);
-  if(window.google&&google.maps)google.maps.event.trigger(map,'resize');
   stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;
-  await new Promise(resolve=>requestAnimationFrame(resolve));
+  restoreCaptureView();captureModeStarted=false;
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
   showCropEditorFromSource(captured);
  }catch(err){
-  document.body.classList.remove('streetview-capture-mode');
-  if(panorama)panorama.setOptions(oldOptions);
   if(stream)stream.getTracks().forEach(t=>t.stop());
+  if(captureModeStarted)restoreCaptureView();
   if(err&&err.name==='NotAllowedError')return;
   alert(err&&err.message?err.message:'No se pudo capturar Street View. Inténtalo nuevamente.');
  }
