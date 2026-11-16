@@ -55,6 +55,18 @@ input:focus,textarea:focus{border-color:var(--blue)}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 .footer{padding:10px 14px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
 @media(max-width:760px){.app{grid-template-columns:1fr;grid-template-rows:48vh 52vh}.mapwrap{grid-row:1}.sidebar{grid-row:2;border-right:0;border-top:1px solid var(--line)}.brand{padding:9px 14px}.brandline input{font-size:16px}.tabs{padding:8px 9px;gap:5px}.tab{padding:9px 3px;font-size:11px}.tab-about{min-height:30px}.publish-tab{min-height:36px}.panel{padding:10px}.map-hint{top:58px}.toolbar{top:auto;bottom:10px;right:10px}.toolbar button{padding:7px;font-size:12px}#searchPanel{top:auto!important;bottom:58px;right:10px}}
+
+/* Controles compactos en el borde del mapa, sin tapar el área central. */
+.map-tools{position:absolute;z-index:720;top:12px;right:12px;display:flex;flex-direction:column;align-items:flex-end;gap:7px;max-width:calc(100% - 24px);pointer-events:none}
+.map-tools button{pointer-events:auto;box-shadow:0 2px 9px #172b4d30;border:1px solid #d6deea;border-radius:9px;background:#fff;color:#1e293b;padding:8px 11px;font-size:12px;font-weight:700;white-space:nowrap}
+.map-tools button.primary{background:#2563eb;color:#fff;border-color:#2563eb}
+.map-tools button.hidden{display:none!important}
+.address-search-panel{top:54px!important;right:12px!important;left:auto!important;bottom:auto!important;transform:none!important;width:min(390px,calc(100% - 24px))!important;padding:9px!important;box-sizing:border-box}
+.address-search-panel.collapsed{display:none!important}
+.address-search-panel .searchbox{display:grid!important;grid-template-columns:minmax(0,1fr) auto;gap:7px!important;width:100%}
+.address-search-panel input{min-width:0!important;width:100%;box-sizing:border-box}
+@media(max-width:760px){.map-tools{top:8px;right:8px;gap:6px}.map-tools button{padding:7px 9px;font-size:11px}.address-search-panel{top:48px!important;right:8px!important;width:min(340px,calc(100% - 16px))!important;padding:7px!important}}
+@media(min-width:761px) and (max-width:1100px){.map-tools{top:10px;right:10px}.address-search-panel{top:52px!important;right:10px!important}}
 </style>
 </head>
 <body>
@@ -107,11 +119,13 @@ input:focus,textarea:focus{border-color:var(--blue)}
       </div>
     </div>
     <div class="map-hint" id="hint">La dirección del pin aparecerá aquí cuando selecciones una ubicación.</div>
-    <div class="toolbar">
-      <button id="locate">◎ Mi ubicación</button>
+    <div class="map-tools" aria-label="Herramientas del mapa">
+      <button id="searchToggle" class="map-tool-button primary" type="button" aria-expanded="false" title="Buscar dirección">⌕ Buscar</button>
+      <button id="exitStreetView" class="map-tool-button hidden" type="button" title="Salir de Street View">✕ Salir de Street View</button>
+      <button id="locate" class="map-tool-button" type="button">◎ Mi ubicación</button>
       <button id="publishHtml" class="primary hidden">Generar URL HTML para SAFI</button>
     </div>
-    <div id="searchPanel" class="card address-search-panel">
+    <div id="searchPanel" class="card address-search-panel collapsed">
       <div class="searchbox"><input id="addressSearch" type="search" placeholder="Buscar calle, número, colonia o código postal…"><button class="primary" id="doSearch">Buscar</button></div>
       <div id="searchResults" class="muted"></div>
     </div>
@@ -308,6 +322,11 @@ function showSelectedStreet(coords){
 function initMap(){
  map=new google.maps.Map($('map'),{center:{lat:32.5149,lng:-117.0382},zoom:12,minZoom:3,maxZoom:21,mapTypeId:google.maps.MapTypeId.ROADMAP,mapTypeControl:true,streetViewControl:true,fullscreenControl:true,zoomControl:true});
  geocoder=new google.maps.Geocoder();
+ const streetView=map.getStreetView();
+ const updateStreetViewButton=()=> $('exitStreetView').classList.toggle('hidden',!streetView.getVisible());
+ streetView.addListener('visible_changed',updateStreetViewButton);
+ $('exitStreetView').onclick=()=>{streetView.setVisible(false);updateStreetViewButton();};
+ updateStreetViewButton();
  map.addListener('click',e=>{if((adding||addingShelter||addingEvent)&&placementMarker){pendingCoords={lat:e.latLng.lat(),lng:e.latLng.lng()};placementMarker.setPosition(e.latLng);showSelectedStreet(pendingCoords);}});
  refresh();
  $('apiSetup').classList.add('hidden');
@@ -596,6 +615,8 @@ async function searchAddress(){
   $('searchResults')._results=data;
  }catch(e){$('searchResults').textContent='No se pudo completar la búsqueda. Verifica que Geocoding API esté habilitada para la clave de Google Maps.'}
 }
+$('searchToggle').onclick=()=>{const panel=$('searchPanel'),opening=panel.classList.contains('collapsed');panel.classList.toggle('collapsed',!opening);$('searchToggle').setAttribute('aria-expanded',String(opening));if(opening)setTimeout(()=>$('addressSearch').focus(),50);else{$('searchResults').innerHTML='';$('addressSearch').value='';}};
+function closeSearchPanel(){ $('searchPanel').classList.add('collapsed');$('searchToggle').setAttribute('aria-expanded','false');}
 $('doSearch').onclick=searchAddress;$('addressSearch').addEventListener('keydown',e=>{if(e.key==='Enter')searchAddress()});
 $('searchResults').addEventListener('click',e=>{
  const b=e.target.closest('button[data-result]');if(!b)return;
@@ -605,7 +626,7 @@ $('searchResults').addEventListener('click',e=>{
  searchMarker=new google.maps.Marker({map,position:x.geometry.location,title:x.formatted_address,animation:google.maps.Animation.DROP});
  if(searchInfo)searchInfo.close();
  searchInfo=new google.maps.InfoWindow({content:'<div style="max-width:260px"><strong>Dirección encontrada</strong><br>'+esc(x.formatted_address)+'</div>'});
- searchInfo.open({map,anchor:searchMarker});$('addressSearch').value=x.formatted_address;
+ searchInfo.open({map,anchor:searchMarker});$('addressSearch').value=x.formatted_address;closeSearchPanel();
 });
 let currentLocationMarker=null,currentLocationAccuracy=null;
 $('locate').onclick=()=>{
