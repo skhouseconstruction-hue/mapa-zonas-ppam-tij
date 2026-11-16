@@ -501,12 +501,13 @@ function openPointModal(p=null){
 function closeModal(){$('modalBack').classList.add('hidden');}
 function showCropEditorFromSource(src){
  const img=$('cropImage');
+ $('photoPreview').classList.add('hidden');$('captureEditor').classList.remove('hidden');
  img.onload=()=>{
   cropSourceImage=img;
   const stage=$('cropStage'),w=img.clientWidth,h=img.clientHeight;
   stage.style.width=w+'px';stage.style.height=h+'px';
   cropBox={x:w*.05,y:h*.05,w:w*.9,h:h*.9};
-  paintCropBox();$('photoPreview').classList.add('hidden');$('captureEditor').classList.remove('hidden');
+  paintCropBox();
  };
  img.onerror=()=>alert('No se pudo abrir la imagen capturada.');
  img.src=src;
