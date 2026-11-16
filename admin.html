@@ -670,7 +670,7 @@ $('publishHtml').onclick=()=>{
  a.href=url;a.download='Mapa_Tijuana_Google_Publicado.html';a.click();
  setTimeout(()=>URL.revokeObjectURL(url),1500);
  const publicUrl='https://skhouseconstruction-hue.github.io/mapa-zonas-ppam-tij/';
- $('safiIframe').value='<iframe src=\"'+publicUrl+'\" width=\"100%\" height=\"650\" style=\"border:0\" allowfullscreen></iframe>';
+ $('safiIframe').value='<iframe src=\"'+publicUrl+'\" title=\"Mapa de zonas PPAM-TIJ\" width=\"100%\" height=\"900\" style=\"display:block;width:100%;height:100vh;min-height:700px;border:0\" loading=\"lazy\" allowfullscreen></iframe>';
  $('safiBack').classList.remove('hidden');
 };
 $('closeSafi').onclick=()=>$('safiBack').classList.add('hidden');
