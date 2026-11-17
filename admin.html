@@ -236,6 +236,7 @@ let locationChangeTarget=null;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 function validData(x){return x&&Array.isArray(x.routes)&&Array.isArray(x.points)}
+function hasValidCoordinates(p){if(!p||p.lat===null||p.lng===null||p.lat===undefined||p.lng===undefined||String(p.lat).trim()===''||String(p.lng).trim()==='')return false;const lat=Number(p.lat),lng=Number(p.lng);return Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=-90&&lat<=90&&lng>=-180&&lng<=180;}
 let githubWriteTimer=null,githubWriteBusy=false,githubWritePending=false,githubDataSha=null,githubLastSyncedState=null,githubPollTimer=null;
 const GITHUB_REPO='skhouseconstruction-hue/mapa-zonas-ppam-tij';
 const GITHUB_BRANCH='main';
@@ -564,7 +565,7 @@ function namedPinIcon(color,stroke){
 function renderMarkers(){
  if(!map||!window.google||!google.maps)return;
  Object.values(markers).forEach(m=>m.setMap(null));markers={};
- state.points.filter(p=>Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))).forEach(p=>{
+ state.points.filter(p=>hasValidCoordinates(p)).forEach(p=>{
   const marker=new google.maps.Marker({
    position:{lat:Number(p.lat),lng:Number(p.lng)},map,title:p.name,
    icon:namedPinIcon('#dc2626','#991b1b'),
@@ -575,7 +576,7 @@ function renderMarkers(){
   marker.addListener('click',()=>info.open({map,anchor:marker}));
   markers[p.id]=marker;
  });
- (state.shelters||[]).filter(p=>p.lat!=null&&p.lng!=null&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))).forEach(p=>{
+ (state.shelters||[]).filter(p=>hasValidCoordinates(p)).forEach(p=>{
   const marker=new google.maps.Marker({
    position:{lat:Number(p.lat),lng:Number(p.lng)},map,title:p.name,
    icon:namedPinIcon('#9333ea','#6b21a8'),
@@ -586,7 +587,7 @@ function renderMarkers(){
   marker.addListener('click',()=>info.open({map,anchor:marker}));
   markers['shelter_'+p.id]=marker;
  });
- (state.events||[]).filter(p=>p.lat!=null&&p.lng!=null&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))).forEach(p=>{const marker=new google.maps.Marker({position:{lat:Number(p.lat),lng:Number(p.lng)},map,title:p.name,icon:namedPinIcon('#e5ff00','#687500'),label:{text:String(p.name||''),color:'#667000',fontSize:'16px',fontWeight:'900'}});const navUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.lat+','+p.lng);const info=new google.maps.InfoWindow({content:`<div style="min-width:170px;max-width:240px"><strong>${esc(p.name)}</strong>${p.photo?`<br><img src="${p.photo}" alt="" style="width:100%;max-width:220px;max-height:140px;object-fit:cover;border-radius:7px;margin:6px 0">`:''}<div>${esc(p.address||'')}</div>${p.notes?`<div style="margin-top:7px;white-space:pre-wrap"><strong>Notas:</strong><br>${esc(p.notes)}</div>`:''}<br><a href="${navUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;background:#2563eb;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-weight:bold">Cómo llegar</a></div>`});marker.addListener('click',()=>info.open({map,anchor:marker}));markers['event_'+p.id]=marker;});
+ (state.events||[]).filter(p=>hasValidCoordinates(p)).forEach(p=>{const marker=new google.maps.Marker({position:{lat:Number(p.lat),lng:Number(p.lng)},map,title:p.name,icon:namedPinIcon('#e5ff00','#687500'),label:{text:String(p.name||''),color:'#667000',fontSize:'16px',fontWeight:'900'}});const navUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.lat+','+p.lng);const info=new google.maps.InfoWindow({content:`<div style="min-width:170px;max-width:240px"><strong>${esc(p.name)}</strong>${p.photo?`<br><img src="${p.photo}" alt="" style="width:100%;max-width:220px;max-height:140px;object-fit:cover;border-radius:7px;margin:6px 0">`:''}<div>${esc(p.address||'')}</div>${p.notes?`<div style="margin-top:7px;white-space:pre-wrap"><strong>Notas:</strong><br>${esc(p.notes)}</div>`:''}<br><a href="${navUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;background:#2563eb;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-weight:bold">Cómo llegar</a></div>`});marker.addListener('click',()=>info.open({map,anchor:marker}));markers['event_'+p.id]=marker;});
 }
 function refresh(){ $('mapName').value=state.name;renderZones();renderShelters();renderEvents();if(map&&window.google&&google.maps){renderMarkers();}}
 function openPointModal(p=null){
@@ -595,7 +596,7 @@ function openPointModal(p=null){
  $('pointName').value=p?.name||'';$('pointDesc').value=p?.description||'';$('pointNote').value=p?.note||'';
  $('selectZoneLocation').classList.remove('hidden');
  $('pointDesc').placeholder=p?'Ubicación registrada':'Selecciona una ubicación en el mapa';
- $('coordText').textContent=(pendingCoords&&editingId===p?.id)?`Coordenadas: ${pendingCoords.lat.toFixed(6)}, ${pendingCoords.lng.toFixed(6)}`:p&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))?`Coordenadas: ${Number(p.lat).toFixed(6)}, ${Number(p.lng).toFixed(6)}`:'Ubicación pendiente: puedes guardarla ahora y agregarla después.';
+ $('coordText').textContent=(pendingCoords&&editingId===p?.id)?`Coordenadas: ${pendingCoords.lat.toFixed(6)}, ${pendingCoords.lng.toFixed(6)}`:p&&hasValidCoordinates(p)?`Coordenadas: ${Number(p.lat).toFixed(6)}, ${Number(p.lng).toFixed(6)}`:'Ubicación pendiente: puedes guardarla ahora y agregarla después.';
  $('pointPhoto').value='';$('photoPreview').src=photoData||'';$('photoPreview').classList.toggle('hidden',!photoData);
  $('modalBack').classList.remove('hidden');
 }
@@ -730,7 +731,7 @@ function confirmZoneLocationPick(){
 }
 function openShelterModal(p=null){
  editingShelterId=p?.id||null;shelterPhotoData=p?.photo||null;
- pendingCoords=p&&p.lat!=null&&p.lng!=null&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))?{lat:Number(p.lat),lng:Number(p.lng)}:null;
+ pendingCoords=p&&hasValidCoordinates(p)?{lat:Number(p.lat),lng:Number(p.lng)}:null;
  $('shelterModalTitle').textContent=p?'Editar resguardo de exhibidores':'Nuevo resguardo de exhibidores';
  $('shelterName').value=p?.name||'';$('shelterDesc').value=p?.description||'';
  $('shelterContact').value=p?.contact||'';$('shelterPhone').value=p?.phone||'';$('shelterNote').value=p?.note||'';
@@ -773,6 +774,7 @@ $('zonesList').addEventListener('click',e=>{
  const b=e.target.closest('button');if(!b)return;
  const p=state.points.find(x=>x.id===b.dataset.id);if(!p)return;
  if(b.dataset.action==='focus'){
+  if(!hasValidCoordinates(p)){alert('Esta zona todavía no tiene una ubicación válida. Edítala y selecciona su punto en el mapa.');return}
   map.setCenter({lat:Number(p.lat),lng:Number(p.lng)});map.setZoom(17);
   const marker=markers[p.id];if(marker)google.maps.event.trigger(marker,'click');
  }
@@ -783,12 +785,13 @@ $('zonesList').addEventListener('click',e=>{
  }
 });
 function directionsToZone(p){
+ if(!hasValidCoordinates(p)){alert('Este registro todavía no tiene una ubicación válida. Asigna primero sus coordenadas en el mapa.');return}
  const url='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.lat+','+p.lng);
  window.open(url,'_blank','noopener');
 }
 function openEventModal(p=null){
  editingEventId=p?.id||null;eventPhotoData=p?.photo||null;
- pendingCoords=p&&p.lat!=null&&p.lng!=null&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))?{lat:Number(p.lat),lng:Number(p.lng)}:null;
+ pendingCoords=p&&hasValidCoordinates(p)?{lat:Number(p.lat),lng:Number(p.lng)}:null;
  $('eventModalTitle').textContent=p?'Editar evento':'Nuevo evento';
  $('eventName').value=p?.name||'';$('eventAddress').value=p?.address||'';$('eventNotes').value=p?.notes||'';
  $('eventPhoto').value='';$('eventPhotoPreview').src=eventPhotoData||'';
