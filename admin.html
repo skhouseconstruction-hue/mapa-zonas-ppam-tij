@@ -269,9 +269,24 @@ async function manualRefreshShared(){
  const button=$('refreshData');
  if(!githubToken()){setGithubStatus('Conecta GitHub para actualizar los datos compartidos.');return}
  if(button.disabled)return;
- button.disabled=true;button.textContent='Actualizando…';setGithubStatus('Consultando cambios de GitHub…');
- try{await refreshSharedFromGitHub(false);if(githubDataSha&&githubLastSyncedState===sharedSnapshot())setGithubStatus('Datos revisados y sincronizados ✓',true)}
- finally{button.disabled=false;button.textContent='↻ Actualizar'}
+ button.disabled=true;button.textContent='Actualizando…';setGithubStatus('Sincronizando datos y comprobando actualizaciones…');
+ try{
+  await refreshSharedFromGitHub(false);
+  // El mismo botón también solicita al navegador la versión más reciente de la aplicación.
+  if('serviceWorker' in navigator){
+   const registration=await navigator.serviceWorker.getRegistration();
+   if(registration)await registration.update();
+  }
+  await ppamCheckPublishedVersion();
+  if(githubDataSha&&githubLastSyncedState===sharedSnapshot()){
+   setGithubStatus('Datos sincronizados y aplicación revisada ✓',true);
+  }
+ }catch(error){
+  setGithubStatus('No se pudo completar la actualización: '+error.message);
+  console.warn(error);
+ }finally{
+  button.disabled=false;button.textContent='↻ Actualizar';
+ }
 }
 function setGithubStatus(message,ok=false){const el=$('githubStatus');if(el){el.textContent=message;el.style.color=ok?'#bbf7d0':'#fde68a'}}
 function githubHeaders(token){return {'Accept':'application/vnd.github+json','Authorization':'Bearer '+token,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'}}
