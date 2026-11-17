@@ -917,7 +917,7 @@ $('generateDiv').onclick=()=>{
  +'<div style="padding:12px 4px;text-align:center;background:#fff6ec;border:1px solid #f6e5d2;border-radius:10px;"><div style="font-size:13px;">Eventos</div><strong style="display:block;font-size:27px;color:#dc842e;">'+events+'</strong></div></div>'
  +'<div style="margin-top:10px;padding:12px;background:#eaf2fc;border-radius:9px;font-size:13px;">Consulta las zonas, ubicaciones y eventos registrados en PPAM-TIJ.</div></div>';
  const payload=JSON.stringify(panel);
- const code='<script>(function(){var run=function(){if(document.getElementById("ppam-panel-usuarios"))return;var frames=Array.from(document.querySelectorAll("iframe"));var target=frames.find(function(f){return f.offsetParent!==null;})||frames[0];if(!target||!target.parentNode)return;var box=document.createElement("div");box.innerHTML='+JSON.stringify(payload)+'.slice(1,-1);var node=box.firstElementChild;if(node)target.parentNode.insertBefore(node,target);};if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",run);else run();})();<\/script>';
+ const code='<script>(function(){var run=function(){if(document.getElementById("ppam-panel-usuarios"))return;var frames=Array.from(document.querySelectorAll("iframe"));var target=frames.find(function(f){return f.offsetParent!==null;})||frames[0];if(!target||!target.parentNode)return;var box=document.createElement("div");box.innerHTML='+payload+';var node=box.firstElementChild;if(node)target.parentNode.insertBefore(node,target);};if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",run);else run();})();<\/script>';
  $('divCode').value=code;
  $('divBack').classList.remove('hidden');
 };
