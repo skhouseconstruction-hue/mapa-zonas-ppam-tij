@@ -58,7 +58,7 @@ html,body{margin:0;width:100%;min-height:100%;font-family:Arial,Helvetica,sans-s
    <svg class="ppam-brand-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M7 18 23 9l18 8 16-8v37l-16 9-18-8-16 8z" fill="none" stroke="white" stroke-width="3" stroke-linejoin="round"/><path d="M23 9v38M41 17v38" fill="none" stroke="white" stroke-width="3"/><path d="M32 8c-7 0-12 5-12 12 0 9 12 20 12 20s12-11 12-20C44 13 39 8 32 8z" fill="#fff"/><circle cx="32" cy="20" r="4" fill="#173b70"/></svg>
    <div><div class="ppam-title">PPAM-TIJ</div><div class="ppam-subtitle">Mapa de zonas y territorios</div></div>
   </div>
-  <div class="ppam-tag">Territorios de Tijuana</div>
+  <div class="ppam-tag">Territorios de <u style="text-underline-offset:3px;text-decoration-thickness:2px;">Tijuana</u></div>
  </header>
  <div class="ppam-main">
   <div class="ppam-stats">
@@ -66,7 +66,7 @@ html,body{margin:0;width:100%;min-height:100%;font-family:Arial,Helvetica,sans-s
    <div class="ppam-stat"><div class="ppam-stat-icon"><svg viewBox="0 0 24 24"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></div><div><div class="ppam-stat-label">Ubicaciones</div><div class="ppam-stat-value" id="ppam-locations">—</div></div></div>
    <div class="ppam-stat"><div class="ppam-stat-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></div><div><div class="ppam-stat-label">Eventos</div><div class="ppam-stat-value" id="ppam-events">—</div></div></div>
   </div>
-  <div class="ppam-map"><iframe src="./safi.html" title="Mapa de usuarios PPAM-TIJ" loading="lazy" allowfullscreen></iframe></div>
+  <div class="ppam-map"><iframe id="ppam-live-map" src="./safi.html" title="Mapa de usuarios PPAM-TIJ" loading="lazy" allowfullscreen></iframe></div>
  </div>
  <div class="ppam-info"><span class="ppam-info-icon">i</span><span><strong>Consulta las zonas, ubicaciones y eventos</strong> registrados en PPAM-TIJ.</span></div>
  <div class="ppam-foot"><span id="ppam-status">Consultando datos publicados…</span><a href="./safi.html" target="_blank" rel="noopener">Abrir mapa completo ↗</a></div>
@@ -100,6 +100,8 @@ html,body{margin:0;width:100%;min-height:100%;font-family:Arial,Helvetica,sans-s
  }
  updateStats();
  setInterval(updateStats,15000);
+ const liveMap=document.getElementById('ppam-live-map');
+ if(liveMap){setInterval(function(){try{liveMap.contentWindow.location.reload();}catch(e){liveMap.src='./safi.html?actualizacion='+Date.now();}},30000);}
 })();
 </script>
 </body>
