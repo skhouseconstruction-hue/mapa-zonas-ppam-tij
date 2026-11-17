@@ -60,7 +60,7 @@ self.addEventListener('fetch',event=>{
 
   // HTML: primero la publicación más reciente. Si no hay conexión, usa esa misma página
   // guardada; nunca entrega admin.html como sustituto de index.html o safi.html.
-  if(request.mode==='navigate' || /\\.html$/i.test(url.pathname)){
+  if(request.mode==='navigate' || url.pathname.toLowerCase().endsWith('.html')){
     event.respondWith(
       fetch(new Request(request,{cache:'no-store'}))
         .then(response=>saveInCache(request,response))
