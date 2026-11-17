@@ -72,42 +72,7 @@ input:focus,textarea:focus{border-color:var(--blue)}
 @media(max-width:760px){.map-tools{top:8px;right:8px;gap:6px}.map-tools button{padding:7px 9px;font-size:11px}.address-search-panel{top:48px!important;right:8px!important;width:min(340px,calc(100% - 16px))!important;padding:7px!important}}
 @media(min-width:761px) and (max-width:1100px){.map-tools{top:10px;right:10px}.address-search-panel{top:52px!important;right:10px!important}}
 </style>
-<style>
-/* Panel PPAM-TIJ integrado al mapa público */
-.ppam-dashboard{position:absolute;inset:0;display:grid;grid-template-rows:42px minmax(0,1fr);background:#f3f6fb;z-index:1;padding:8px;gap:7px}
-.ppam-dashboard-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 12px;border-radius:8px;background:#172b4d;color:#fff;min-width:0}
-.ppam-dashboard-brand{display:flex;align-items:center;gap:9px;min-width:0}
-.ppam-dashboard-brand .ppam-pin{font-size:22px;line-height:1}
-.ppam-dashboard-brand strong{display:block;font-size:15px;line-height:1.2}
-.ppam-dashboard-brand small{display:block;font-size:10px;opacity:.88}
-.ppam-dashboard-tag{font-size:10px;font-weight:700;background:#2563eb;padding:6px 9px;border-radius:7px;white-space:nowrap}
-.ppam-dashboard-body{display:grid;grid-template-columns:104px minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;gap:7px;min-height:0}
-.ppam-dashboard-stats{display:flex;flex-direction:column;gap:7px;min-height:0}
-.ppam-stat{display:flex;align-items:center;gap:7px;min-height:0;flex:1;background:#fff;border:1px solid #e5eaf2;border-radius:8px;padding:7px}
-.ppam-stat-icon{font-size:19px;line-height:1}
-.ppam-stat-label{font-size:9px;font-weight:700;color:#64748b}
-.ppam-stat-value{font-size:18px;line-height:1.15;font-weight:800;color:#172b4d}
-.ppam-stat:nth-child(1) .ppam-stat-value{color:#2563eb}
-.ppam-stat:nth-child(2) .ppam-stat-value{color:#15945b}
-.ppam-stat:nth-child(3) .ppam-stat-value{color:#ea7b24}
-.ppam-map-slot{position:relative;min-width:0;min-height:0;overflow:hidden;border-radius:8px;background:#e9eef5}
-.ppam-map-slot #map{height:100%!important;width:100%!important}
-.ppam-dashboard-note{grid-column:1/-1;background:#e8f0fa;color:#334155;border-radius:7px;padding:6px 9px;font-size:10px;font-weight:600}
-.mapwrap.ppam-mapwrap{display:block!important;height:100%;min-height:0;overflow:hidden}
-@media(max-width:760px){
- .ppam-dashboard{padding:5px;gap:5px;grid-template-rows:36px minmax(0,1fr)}
- .ppam-dashboard-head{padding:5px 8px}
- .ppam-dashboard-brand strong{font-size:13px}
- .ppam-dashboard-brand small{font-size:9px}
- .ppam-dashboard-tag{font-size:9px;padding:5px 6px}
- .ppam-dashboard-body{grid-template-columns:82px minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;gap:5px}
- .ppam-dashboard-stats{gap:5px}
- .ppam-stat{padding:5px;gap:4px;flex-direction:column;align-items:flex-start;justify-content:center}
- .ppam-stat-icon{font-size:15px}
- .ppam-stat-label{font-size:8px}
- .ppam-stat-value{font-size:16px}
- .ppam-dashboard-note{font-size:9px;padding:5px 7px}
-}</style></head>
+</head>
 <body>
 <div class="app">
   <aside class="sidebar">
@@ -721,13 +686,5 @@ $('importFile').onchange=e=>{if(!ADMIN_MODE)return;const f=e.target.files[0];if(
 load().then(()=>{configureMode();refresh();if(!ADMIN_MODE)startPublicAutoRefresh();if(ADMIN_MODE&&githubToken())setGithubStatus('GitHub autorizado en este dispositivo ✓',true);if(GOOGLE_MAPS_API_KEY){connectGoogleMaps()}else{$('apiSetup').classList.remove('hidden');}});
 })();
 </script>
-<script>
-(function(){
- const wrap=document.querySelector('.mapwrap'),mapEl=document.getElementById('map');
- if(!wrap||!mapEl||document.getElementById('ppamDashboard'))return;
- const dashboard=document.createElement('section');dashboard.id='ppamDashboard';dashboard.className='ppam-dashboard';
- dashboard.innerHTML='<header class="ppam-dashboard-head"><div class="ppam-dashboard-brand"><span class="ppam-pin">⌖</span><div><strong>PPAM-TIJ</strong><small>Mapa de zonas y territorios</small></div></div><span class="ppam-dashboard-tag">Territorios de Tijuana</span></header><div class="ppam-dashboard-body"><aside class="ppam-dashboard-stats"><div class="ppam-stat"><span class="ppam-stat-icon">◫</span><div><div class="ppam-stat-label">Zonas</div><div class="ppam-stat-value" id="ppamCountZones">0</div></div></div><div class="ppam-stat"><span class="ppam-stat-icon">♟</span><div><div class="ppam-stat-label">Ubicaciones</div><div class="ppam-stat-value" id="ppamCountLocations">0</div></div></div><div class="ppam-stat"><span class="ppam-stat-icon">▣</span><div><div class="ppam-stat-label">Eventos</div><div class="ppam-stat-value" id="ppamCountEvents">0</div></div></div></aside><div class="ppam-map-slot" id="ppamMapSlot"></div><div class="ppam-dashboard-note">ⓘ Consulta las zonas, ubicaciones y eventos registrados en PPAM-TIJ.</div></div>';
- wrap.classList.add('ppam-mapwrap');wrap.insertBefore(dashboard,wrap.firstChild);dashboard.querySelector('#ppamMapSlot').appendChild(mapEl);
- try{const raw=document.getElementById('publishedData')?.textContent||'{}';const data=JSON.parse(raw);const points=Array.isArray(data.points)?data.points:[];const locations=points.filter(p=>Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))&&p.lat!==null&&p.lng!==null);document.getElementById('ppamCountZones').textContent=points.length.toLocaleString('es-MX');document.getElementById('ppamCountLocations').textContent=locations.length.toLocaleString('es-MX');document.getElementById('ppamCountEvents').textContent=(Array.isArray(data.events)?data.events.length:0).toLocaleString('es-MX');}catch(e){console.warn('No se pudieron calcular los indicadores PPAM-TIJ',e);}
-})();</script></body>
+</body>
 </html>
