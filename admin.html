@@ -905,20 +905,20 @@ $('publishHtml').onclick=()=>{
 };
 $('generateDiv').onclick=()=>{
  if(!ADMIN_MODE)return;
- const base='https://skhouseconstruction-hue.github.io/mapa-zonas-ppam-tij/';
  const zones=Array.isArray(state.points)?state.points.length:0;
  const valid=p=>p&&p.lat!==null&&p.lng!==null&&p.lat!==undefined&&p.lng!==undefined&&String(p.lat).trim()!==''&&String(p.lng).trim()!==''&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))&&Number(p.lat)>=-90&&Number(p.lat)<=90&&Number(p.lng)>=-180&&Number(p.lng)<=180;
  const locations=[...(state.points||[]),...(state.shelters||[])].filter(valid).length;
  const events=Array.isArray(state.events)?state.events.length:0;
- let html='';
- html+='<div id="ppam-panel-usuarios" style="display:block;width:100%;box-sizing:border-box;margin:0 0 14px;padding:12px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;font-family:Arial,Helvetica,sans-serif;color:#152d50;">';
- html+='<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;background:linear-gradient(115deg,#173b70,#102e5b);border-radius:10px;color:#fff;"><div><div style="font-size:25px;font-weight:800;">PPAM-TIJ</div><div style="font-size:14px;margin-top:4px;">Mapa de zonas y territorios</div></div><div style="padding:9px 12px;background:#2474c9;border-radius:22px;font-size:12px;font-weight:700;">Territorios de Tijuana</div></div>';
- html+='<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0;">';
- html+='<div style="padding:12px 4px;text-align:center;background:#f0f6ff;border:1px solid #dce8f7;border-radius:10px;"><div style="font-size:13px;">Zonas</div><strong style="display:block;font-size:27px;color:#2468b8;">'+zones+'</strong></div>';
- html+='<div style="padding:12px 4px;text-align:center;background:#effaf3;border:1px solid #d9f0e1;border-radius:10px;"><div style="font-size:13px;">Ubicaciones</div><strong style="display:block;font-size:27px;color:#17965b;">'+locations+'</strong></div>';
- html+='<div style="padding:12px 4px;text-align:center;background:#fff6ec;border:1px solid #f6e5d2;border-radius:10px;"><div style="font-size:13px;">Eventos</div><strong style="display:block;font-size:27px;color:#dc842e;">'+events+'</strong></div></div>';
- html+='<div style="margin-top:10px;padding:12px;background:#eaf2fc;border-radius:9px;font-size:13px;">Consulta las zonas, ubicaciones y eventos registrados en PPAM-TIJ. El mapa de usuarios permanece debajo, en su ubicación original.</div></div>';
- $('divCode').value=html;
+ const panel='<div id="ppam-panel-usuarios" style="display:block;width:100%;box-sizing:border-box;margin:0 0 14px;padding:12px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;font-family:Arial,Helvetica,sans-serif;color:#152d50;">'
+ +'<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;background:linear-gradient(115deg,#173b70,#102e5b);border-radius:10px;color:#fff;"><div><div style="font-size:25px;font-weight:800;">PPAM-TIJ</div><div style="font-size:14px;margin-top:4px;">Mapa de zonas y territorios</div></div><div style="padding:9px 12px;background:#2474c9;border-radius:22px;font-size:12px;font-weight:700;">Territorios de Tijuana</div></div>'
+ +'<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0;">'
+ +'<div style="padding:12px 4px;text-align:center;background:#f0f6ff;border:1px solid #dce8f7;border-radius:10px;"><div style="font-size:13px;">Zonas</div><strong style="display:block;font-size:27px;color:#2468b8;">'+zones+'</strong></div>'
+ +'<div style="padding:12px 4px;text-align:center;background:#effaf3;border:1px solid #d9f0e1;border-radius:10px;"><div style="font-size:13px;">Ubicaciones</div><strong style="display:block;font-size:27px;color:#17965b;">'+locations+'</strong></div>'
+ +'<div style="padding:12px 4px;text-align:center;background:#fff6ec;border:1px solid #f6e5d2;border-radius:10px;"><div style="font-size:13px;">Eventos</div><strong style="display:block;font-size:27px;color:#dc842e;">'+events+'</strong></div></div>'
+ +'<div style="margin-top:10px;padding:12px;background:#eaf2fc;border-radius:9px;font-size:13px;">Consulta las zonas, ubicaciones y eventos registrados en PPAM-TIJ.</div></div>';
+ const payload=JSON.stringify(panel);
+ const code='<script>(function(){var run=function(){if(document.getElementById("ppam-panel-usuarios"))return;var frames=Array.from(document.querySelectorAll("iframe"));var target=frames.find(function(f){return f.offsetParent!==null;})||frames[0];if(!target||!target.parentNode)return;var box=document.createElement("div");box.innerHTML='+JSON.stringify(payload)+'.slice(1,-1);var node=box.firstElementChild;if(node)target.parentNode.insertBefore(node,target);};if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",run);else run();})();<\/script>';
+ $('divCode').value=code;
  $('divBack').classList.remove('hidden');
 };
 $('closeDiv').onclick=()=>$('divBack').classList.add('hidden');
