@@ -1,7 +1,7 @@
 'use strict';
 
 // v40: prioriza siempre la versión publicada y conserva una copia para uso sin conexión.
-const CACHE_NAME='ppam-tij-admin-v40';
+const CACHE_NAME='ppam-tij-admin-v41';
 const APP_FILES=[
   './admin.html',
   './manifest.webmanifest',
