@@ -190,6 +190,7 @@ let map, geocoder, geocodeRequest=0, markers={}, pendingCoords=null, editingId=n
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 function validData(x){return x&&Array.isArray(x.routes)&&Array.isArray(x.points)}
+function hasValidCoordinates(p){return !!p&&p.lat!==null&&p.lng!==null&&String(p.lat??'').trim()!==''&&String(p.lng??'').trim()!==''&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))&&Math.abs(Number(p.lat))<=90&&Math.abs(Number(p.lng))<=180}
 let githubWriteTimer=null,githubWriteBusy=false,githubWritePending=false,githubDataSha=null;
 const GITHUB_REPO='skhouseconstruction-hue/mapa-zonas-ppam-tij';
 const GITHUB_BRANCH='main';
@@ -381,8 +382,8 @@ function renderZones(){
    </div>
   </div>
   <div class="point-actions">
-   <button data-action="focus" data-id="${p.id}">Ver en mapa</button>
-   <button class="primary" data-action="directions" data-id="${p.id}">Cómo llegar</button>
+   ${hasValidCoordinates(p)?'<button data-action="focus" data-id="'+esc(p.id)+'">Ver en mapa</button>':'<button disabled title="Esta zona todavía no tiene coordenadas">Sin ubicación</button>'}
+   ${hasValidCoordinates(p)?'<button class="primary" data-action="directions" data-id="'+esc(p.id)+'">Cómo llegar</button>':'<button disabled title="Esta zona todavía no tiene coordenadas">Cómo llegar</button>'}
    ${ADMIN_MODE?`<button data-action="edit" data-id="${p.id}">Editar</button><button class="danger" data-action="remove" data-id="${p.id}">Eliminar</button>`:''}
   </div>
  </div>`).join('');
@@ -402,13 +403,13 @@ function renderShelters(){
    </div>
   </div>
   <div class="point-actions">
-   <button data-shelter-action="focus" data-id="${p.id}">Ver en mapa</button>
-   <button class="primary" data-shelter-action="directions" data-id="${p.id}">Cómo llegar</button>
+   ${hasValidCoordinates(p)?'<button data-shelter-action="focus" data-id="'+esc(p.id)+'">Ver en mapa</button>':'<button disabled title="Este resguardo todavía no tiene coordenadas">Sin ubicación</button>'}
+   ${hasValidCoordinates(p)?'<button class="primary" data-shelter-action="directions" data-id="'+esc(p.id)+'">Cómo llegar</button>':'<button disabled title="Este resguardo todavía no tiene coordenadas">Cómo llegar</button>'}
    ${ADMIN_MODE?`<button data-shelter-action="edit" data-id="${p.id}">Editar</button><button class="danger" data-shelter-action="remove" data-id="${p.id}">Eliminar</button>`:''}
   </div>
  </div>`).join('');
 }
-function renderEvents(){const el=$('eventsList'),items=state.events||[];if(!items.length){el.innerHTML='<div class="empty">Todavía no hay eventos registrados.</div>';return}el.innerHTML=[...items].sort(comparePublicNames).map(p=>`<div class="card zone-card"><div class="row" style="gap:10px;align-items:flex-start"><div style="min-width:0;flex:1"><div class="route-title">${esc(p.name)}</div>${p.photo?`<img src="${p.photo}" alt="Fotografía del evento" style="display:block;width:100%;max-width:230px;max-height:135px;object-fit:cover;border-radius:8px;margin:7px 0">`:''}<div class="muted">${esc(p.address||'Sin dirección')}</div>${p.notes?`<div class="muted" style="margin-top:5px;white-space:pre-wrap"><strong>Notas:</strong> ${esc(p.notes)}</div>`:''}</div></div><div class="point-actions"><button data-event-action="focus" data-id="${p.id}">Ver en mapa</button><button class="primary" data-event-action="directions" data-id="${p.id}">Cómo llegar</button>${ADMIN_MODE?`<button data-event-action="edit" data-id="${p.id}">Editar</button><button class="danger" data-event-action="remove" data-id="${p.id}">Eliminar</button>`:''}</div></div>`).join('')}
+function renderEvents(){const el=$('eventsList'),items=state.events||[];if(!items.length){el.innerHTML='<div class="empty">Todavía no hay eventos registrados.</div>';return}el.innerHTML=[...items].sort(comparePublicNames).map(p=>`<div class="card zone-card"><div class="row" style="gap:10px;align-items:flex-start"><div style="min-width:0;flex:1"><div class="route-title">${esc(p.name)}</div>${p.photo?`<img src="${p.photo}" alt="Fotografía del evento" style="display:block;width:100%;max-width:230px;max-height:135px;object-fit:cover;border-radius:8px;margin:7px 0">`:''}<div class="muted">${esc(p.address||'Sin dirección')}</div>${p.notes?`<div class="muted" style="margin-top:5px;white-space:pre-wrap"><strong>Notas:</strong> ${esc(p.notes)}</div>`:''}</div></div><div class="point-actions">${hasValidCoordinates(p)?'<button data-event-action="focus" data-id="'+esc(p.id)+'">Ver en mapa</button>':'<button disabled title="Este evento todavía no tiene coordenadas">Sin ubicación</button>'}${hasValidCoordinates(p)?'<button class="primary" data-event-action="directions" data-id="'+esc(p.id)+'">Cómo llegar</button>':'<button disabled title="Este evento todavía no tiene coordenadas">Cómo llegar</button>'}${ADMIN_MODE?`<button data-event-action="edit" data-id="${p.id}">Editar</button><button class="danger" data-event-action="remove" data-id="${p.id}">Eliminar</button>`:''}</div></div>`).join('')}
 function namedPinIcon(color,stroke){
  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="40" height="52" viewBox="0 0 40 52"><path d="M20 1C9.5 1 1 9.5 1 20c0 14 19 31 19 31s19-17 19-31C39 9.5 30.5 1 20 1z" fill="'+color+'" stroke="'+stroke+'" stroke-width="2"/><circle cx="20" cy="20" r="7" fill="#fff" stroke="'+stroke+'" stroke-width="1.5"/></svg>';
  return {url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(40,52),anchor:new google.maps.Point(20,52),labelOrigin:new google.maps.Point(20,-7)};
@@ -417,6 +418,7 @@ function renderMarkers(){
  if(!map||!window.google||!google.maps)return;
  Object.values(markers).forEach(m=>m.setMap(null));markers={};
  state.points.forEach(p=>{
+  if(!hasValidCoordinates(p))return;
   const marker=new google.maps.Marker({
    position:{lat:Number(p.lat),lng:Number(p.lng)},map,title:p.name,
    icon:namedPinIcon('#dc2626','#991b1b'),
@@ -428,6 +430,7 @@ function renderMarkers(){
   markers[p.id]=marker;
  });
  (state.shelters||[]).forEach(p=>{
+  if(!hasValidCoordinates(p))return;
   const marker=new google.maps.Marker({
    position:{lat:Number(p.lat),lng:Number(p.lng)},map,title:p.name,
    icon:namedPinIcon('#9333ea','#6b21a8'),
@@ -438,7 +441,7 @@ function renderMarkers(){
   marker.addListener('click',()=>info.open({map,anchor:marker}));
   markers['shelter_'+p.id]=marker;
  });
- (state.events||[]).forEach(p=>{const marker=new google.maps.Marker({position:{lat:Number(p.lat),lng:Number(p.lng)},map,title:p.name,icon:namedPinIcon('#e5ff00','#687500'),label:{text:String(p.name||''),color:'#667000',fontSize:'16px',fontWeight:'900'}});const navUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.lat+','+p.lng);const info=new google.maps.InfoWindow({content:`<div style="min-width:170px;max-width:240px"><strong>${esc(p.name)}</strong>${p.photo?`<br><img src="${p.photo}" alt="" style="width:100%;max-width:220px;max-height:140px;object-fit:cover;border-radius:7px;margin:6px 0">`:''}<div>${esc(p.address||'')}</div>${p.notes?`<div style="margin-top:7px;white-space:pre-wrap"><strong>Notas:</strong><br>${esc(p.notes)}</div>`:''}<br><a href="${navUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;background:#2563eb;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-weight:bold">Cómo llegar</a></div>`});marker.addListener('click',()=>info.open({map,anchor:marker}));markers['event_'+p.id]=marker;});
+ (state.events||[]).forEach(p=>{if(!hasValidCoordinates(p))return;const marker=new google.maps.Marker({position:{lat:Number(p.lat),lng:Number(p.lng)},map,title:p.name,icon:namedPinIcon('#e5ff00','#687500'),label:{text:String(p.name||''),color:'#667000',fontSize:'16px',fontWeight:'900'}});const navUrl='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.lat+','+p.lng);const info=new google.maps.InfoWindow({content:`<div style="min-width:170px;max-width:240px"><strong>${esc(p.name)}</strong>${p.photo?`<br><img src="${p.photo}" alt="" style="width:100%;max-width:220px;max-height:140px;object-fit:cover;border-radius:7px;margin:6px 0">`:''}<div>${esc(p.address||'')}</div>${p.notes?`<div style="margin-top:7px;white-space:pre-wrap"><strong>Notas:</strong><br>${esc(p.notes)}</div>`:''}<br><a href="${navUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;background:#2563eb;color:white;padding:7px 10px;border-radius:6px;text-decoration:none;font-weight:bold">Cómo llegar</a></div>`});marker.addListener('click',()=>info.open({map,anchor:marker}));markers['event_'+p.id]=marker;});
 }
 function refresh(){ $('mapName').value=state.name;renderZones();renderShelters();renderEvents();if(map&&window.google&&google.maps){renderMarkers();}}
 function openPointModal(p=null){
@@ -603,6 +606,7 @@ $('zonesList').addEventListener('click',e=>{
  }
 });
 function directionsToZone(p){
+ if(!hasValidCoordinates(p)){alert('Esta ubicación todavía no tiene coordenadas registradas.');return}
  const url='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.lat+','+p.lng);
  window.open(url,'_blank','noopener');
 }
