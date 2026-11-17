@@ -219,7 +219,7 @@ body.admin-mode .map-hint{display:none!important}
 <div class="modal-back hidden" id="divBack">
  <div class="modal">
   <h3>Código DIV para el panel PPAM-TIJ</h3>
-  <p class="muted">Este código agrega el panel nuevo. No reemplaza ni elimina el mapa de usuarios que ya tienes en SAFI.</p>
+  <p class="muted">Este código inserta únicamente el panel PPAM-TIJ en este espacio de SAFI. No incluye otro mapa completo debajo ni mueve o reemplaza el mapa de usuarios que ya existe fuera de este bloque. Pega solo este código DIV; no agregues aquí el iframe de safi.html por separado.</p>
   <div class="field"><label for="divCode">Código para pegar en SAFI → Fuente HTML</label><textarea id="divCode" rows="8" readonly></textarea></div>
   <div class="muted" style="margin-top:8px">El DIV carga el panel publicado en GitHub Pages. El panel consulta los datos reales y muestra el mapa público integrado.</div>
   <div class="modal-actions"><button id="closeDiv">Cerrar</button><button class="primary" id="copyDiv">Copiar código DIV</button></div>
@@ -906,12 +906,12 @@ $('publishHtml').onclick=()=>{
 $('generateDiv').onclick=()=>{
  if(!ADMIN_MODE)return;
  const panelUrl='https://skhouseconstruction-hue.github.io/mapa-zonas-ppam-tij/panel-usuarios.html';
- $('divCode').value='<div id="ppam-panel-usuarios" style="width:100%;margin:20px 0;">\\n  <iframe src="'+panelUrl+'" title="PPAM-TIJ - Panel de zonas y territorios" style="display:block;width:100%;height:620px;border:0;border-radius:12px;" loading="lazy" allowfullscreen></iframe>\\n</div>';
+ $('divCode').value='<div id="ppam-panel-usuarios" style="display:block;width:100%;margin:0;padding:0;">\\n  <iframe src="'+panelUrl+'" title="PPAM-TIJ - Panel de zonas y territorios" style="display:block;width:100%;height:620px;margin:0;padding:0;border:0;border-radius:12px;" loading="lazy" allowfullscreen></iframe>\\n</div>';
  $('divBack').classList.remove('hidden');
 };
 $('closeDiv').onclick=()=>$('divBack').classList.add('hidden');
 $('copyDiv').onclick=async()=>{
- try{await navigator.clipboard.writeText($('divCode').value);alert('Código DIV copiado. Pégalo en SAFI encima del mapa de usuarios existente.');}
+ try{await navigator.clipboard.writeText($('divCode').value);alert('Código DIV copiado. Pégalo únicamente en el espacio destinado al panel. No pegues aquí el iframe del mapa de usuarios; ese mapa debe permanecer en su ubicación actual.');}
  catch(e){$('divCode').focus();$('divCode').select();alert('Selecciona y copia el código DIV que aparece en el recuadro.');}
 };
 $('safiAddressTab').onclick=()=>setSafiTab('address');
