@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#172b4d">
-<meta name="app-build" content="admin-auto-update-20261117-coord-fix">
+<meta name="app-build" content="admin-auto-update-20261117-refresh-fix2">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -280,8 +280,11 @@ async function manualRefreshShared(){
   }
   await ppamCheckPublishedVersion();
   if(githubDataSha&&githubLastSyncedState===sharedSnapshot()){
-   setGithubStatus('Datos sincronizados y aplicación revisada ✓',true);
+   setGithubStatus('Datos sincronizados. Aplicando la versión más reciente…',true);
   }
+  // Al pulsar Actualizar, recarga la aplicación publicada cuando no haya una edición abierta.
+  ppamUpdatePending=true;
+  ppamReloadWhenSafe();
  }catch(error){
   setGithubStatus('No se pudo completar la actualización: '+error.message);
   console.warn(error);
@@ -935,7 +938,7 @@ async function ppamCheckPublishedVersion(){
   const response=await fetch('./admin.html?version_check='+Date.now(),{cache:'no-store',credentials:'same-origin'});
   if(!response.ok)return;
   const html=await response.text();
-  const match=html.match(/<meta\\s+name=["']app-build["']\\s+content=["']([^"']+)["']/i);
+  const match=html.match(/<meta\s+name=["']app-build["']\s+content=["']([^"']+)["']/i);
   const current=document.querySelector('meta[name="app-build"]')?.content;
   if(match&&current&&match[1]!==current){
    ppamUpdatePending=true;
