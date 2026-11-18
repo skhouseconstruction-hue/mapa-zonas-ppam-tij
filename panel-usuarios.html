@@ -120,8 +120,11 @@ html,body{margin:0;width:100%;min-height:100%;font-family:Arial,Helvetica,sans-s
  async function updatePanel(){
   const status=document.getElementById('ppam-status');
   try{
-   let response=await fetch(DATA_URL+'?v='+Date.now(),{cache:'no-store'});
-   if(!response.ok){
+   let response;
+   try{
+    response=await fetch(DATA_URL+'?v='+Date.now(),{cache:'no-store'});
+    if(!response.ok)throw new Error('HTTP '+response.status);
+   }catch(primaryError){
     response=await fetch('https://raw.githubusercontent.com/skhouseconstruction-hue/mapa-zonas-ppam-tij/main/data.json?v='+Date.now(),{cache:'no-store'});
    }
    if(!response.ok)throw new Error('No se pudo leer data.json ('+response.status+').');
@@ -129,9 +132,8 @@ html,body{margin:0;width:100%;min-height:100%;font-family:Arial,Helvetica,sans-s
    const points=Array.isArray(data.points)?data.points:[];
    const shelters=Array.isArray(data.shelters)?data.shelters:[];
    const events=Array.isArray(data.events)?data.events:[];
-   const locations=[...points,...shelters].filter(validCoords).length;
    document.getElementById('ppam-zones').textContent=String(points.length);
-   document.getElementById('ppam-locations').textContent=String(locations);
+   document.getElementById('ppam-locations').textContent=String(shelters.length);
    document.getElementById('ppam-events').textContent=String(events.length);
    renderPins({...data,points,shelters,events});
    status.textContent='Datos actualizados · '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
