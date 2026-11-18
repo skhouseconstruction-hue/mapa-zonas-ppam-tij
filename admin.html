@@ -107,6 +107,17 @@ body.admin-mode .map-hint{display:none!important}
 .mapdiv-frame-wrap{flex:1 1 auto;min-height:0;width:100%;overflow:hidden;border:1px solid #dce4ef;border-radius:12px;background:#fff}
 .mapdiv-frame-wrap iframe{display:block;width:100%;height:100%;min-height:0;border:0;background:#fff}
 @media(max-width:600px){#mapDivPanel.mapdiv-fullscreen:not(.hidden){padding:6px!important;gap:6px!important}.mapdiv-toolbar{font-size:14px}.mapdiv-actions button{padding:8px 10px;font-size:12px}}
+
+/* Selector persistente entre el mapa principal y el Mapa DIV */
+.workspace-switcher{display:flex;align-items:stretch;gap:10px;padding:10px 14px;background:#102f59;border-bottom:1px solid #284b78}
+.workspace-button{flex:1;min-width:0;padding:13px 16px;border:1px solid #ffffff55;border-radius:10px;background:#173b70;color:#fff;font-weight:800;font-size:clamp(13px,1.7vw,16px);text-align:center;cursor:pointer;white-space:normal}
+.workspace-button:hover{background:#24528b}
+.workspace-button.active{background:#2877cf;border-color:#79b7f4;box-shadow:inset 0 0 0 1px #ffffff33}
+.workspace-switcher-inmap{flex:1;padding:0;border:0;background:transparent}
+.workspace-switcher-inmap .workspace-button{background:#173b70}
+.workspace-switcher-inmap .workspace-button.active{background:#2877cf}
+.mapdiv-toolbar{width:100%}
+@media(max-width:600px){.workspace-switcher{gap:6px;padding:8px}.workspace-button{padding:10px 8px;font-size:12px}.workspace-switcher-inmap{padding:0}}
 </style>
 </head>
 <body>
@@ -117,6 +128,10 @@ body.admin-mode .map-hint{display:none!important}
       <div class="brandline"><span>⌖</span><input id="mapName" value="Mapa de zonas PPAM-TIJ" aria-label="Nombre del mapa" title="Haz clic para cambiar el nombre"></div>
       <div class="brand-tools"><button id="installApp" class="install-app" type="button">＋ Instalar aplicación</button> <button id="connectGithub" class="install-app visible" type="button">Conectar GitHub</button> <button id="refreshData" class="install-app visible" type="button" title="Consultar cambios compartidos">↻ Actualizar</button><span id="githubStatus" style="display:block;font-size:11px;margin-top:5px;color:#fde68a">Sin conexión a GitHub</span></div>
     </header>
+    <nav class="workspace-switcher" aria-label="Cambiar entre mapas">
+      <button type="button" class="workspace-button active" data-workspace="main">＋ Mapa de zona PPAM-TIJ</button>
+      <button type="button" class="workspace-button" data-workspace="div">＋ Mapa DIV PPAM-TIJ</button>
+    </nav>
     <nav class="tabs" aria-label="Secciones del mapa">
       <button class="tab active" data-tab="zones" type="button">Zonas</button>
       <button class="tab" data-tab="shelters" type="button">Resguardo de exhibidores</button>
@@ -138,10 +153,12 @@ body.admin-mode .map-hint{display:none!important}
     <section class="panel hidden" id="eventsPanel" tabindex="0" aria-label="Eventos registrados"><div class="row between"><h3>Eventos registrados</h3><button class="primary" id="addEvent">＋ Agregar evento</button></div><div class="muted">Direcciones y ubicaciones de eventos. Selecciona uno para verlo en el mapa.</div><div id="eventsList"></div></section>
     <section class="panel hidden mapdiv-fullscreen" id="mapDivPanel" tabindex="0" aria-label="Mapa DIV PPAM-TIJ">
       <div class="mapdiv-toolbar">
-        <strong>Mapa DIV PPAM-TIJ</strong>
+        <nav class="workspace-switcher workspace-switcher-inmap" aria-label="Cambiar entre mapas">
+          <button type="button" class="workspace-button" data-workspace="main">＋ Mapa de zona PPAM-TIJ</button>
+          <button type="button" class="workspace-button active" data-workspace="div">＋ Mapa DIV PPAM-TIJ</button>
+        </nav>
         <div class="mapdiv-actions">
           <button id="generateDiv" class="primary" type="button">Generar código DIV</button>
-          <button id="closeMapDiv" type="button">Volver</button>
         </div>
       </div>
       <div class="mapdiv-frame-wrap">
@@ -938,7 +955,10 @@ $('copyDiv').onclick=async()=>{
  try{await navigator.clipboard.writeText($('divCode').value);alert('DIV copiado. En SAFI, reemplaza únicamente el DIV PPAM-TIJ anterior y conserva debajo el mapa original de voluntarios.');}
  catch(e){$('divCode').focus();$('divCode').select();alert('Selecciona y copia el código DIV del recuadro.');}
 };
-$('closeMapDiv').onclick=()=>setTab('zones');
+document.querySelectorAll('[data-workspace="main"]').forEach(b=>b.addEventListener('click',()=>{setTab('zones');updateWorkspaceButtons('main');}));
+document.querySelectorAll('[data-workspace="div"]').forEach(b=>b.addEventListener('click',()=>{setTab('mapdiv');updateWorkspaceButtons('div');}));
+function updateWorkspaceButtons(which){document.querySelectorAll('.workspace-button').forEach(b=>b.classList.toggle('active',b.dataset.workspace===which));}
+$('closeMapDiv').onclick=()=>{setTab('zones');updateWorkspaceButtons('main');};
 $('safiAddressTab').onclick=()=>setSafiTab('address');
 $('safiDownloadTab').onclick=()=>setSafiTab('download');
 $('closeSafi').onclick=()=>$('safiBack').classList.add('hidden');
