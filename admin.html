@@ -906,25 +906,9 @@ $('publishHtml').onclick=()=>{
 $('generateDiv').onclick=()=>{
  if(!ADMIN_MODE)return;
  const panelUrl='https://skhouseconstruction-hue.github.io/mapa-zonas-ppam-tij/panel-usuarios.html';
- const code='<script>(function(){'
- + 'function insertarPanelPPAM(){'
- + 'if(document.getElementById("ppam-panel-usuarios"))return;'
- + 'var marcos=Array.prototype.slice.call(document.querySelectorAll("iframe"));'
- + 'var mapaVoluntarios=marcos.find(function(m){return m.offsetParent!==null;})||marcos[0];'
- + 'if(!mapaVoluntarios||!mapaVoluntarios.parentNode)return;'
- + 'var contenedor=document.createElement("div");'
- + 'contenedor.id="ppam-panel-usuarios";'
- + 'contenedor.style.cssText="display:block;width:100%;margin:0 0 14px;padding:0;box-sizing:border-box;";'
- + 'var panel=document.createElement("iframe");'
- + 'panel.src='+JSON.stringify(panelUrl)+';'
- + 'panel.title="PPAM-TIJ - Panel de zonas, ubicaciones, eventos y mapa";'
- + 'panel.loading="lazy";panel.setAttribute("allowfullscreen","");'
- + 'panel.style.cssText="display:block;width:100%;height:690px;min-height:520px;border:0;border-radius:14px;background:#fff;";'
- + 'contenedor.appendChild(panel);'
- + 'mapaVoluntarios.parentNode.insertBefore(contenedor,mapaVoluntarios);'
- + '}'
- + 'if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",insertarPanelPPAM);else insertarPanelPPAM();'
- + '})();<\/script>';
+ const code='<div id="ppam-panel-usuarios" style="display:block;width:100%;margin:0 0 14px;padding:0;box-sizing:border-box;">'
+ +'<iframe src="'+panelUrl+'" title="PPAM-TIJ - Mapa de zonas, ubicaciones y eventos" width="100%" height="690" style="display:block;width:100%;height:690px;min-height:520px;border:0;border-radius:14px;background:#fff;" loading="lazy" allowfullscreen></iframe>'
+ +'</div>';
  $('divCode').value=code;
  $('divBack').classList.remove('hidden');
 };
