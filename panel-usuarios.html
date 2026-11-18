@@ -126,8 +126,11 @@ html,body{margin:0;width:100%;min-height:100%;font-family:Arial,Helvetica,sans-s
  async function updatePanel(){
   const status=document.getElementById('ppam-status');
   try{
-   const response=await fetch(DATA_URL+'?v='+Date.now(),{cache:'no-store'});
-   if(!response.ok)throw new Error('HTTP '+response.status);
+   let response=await fetch(DATA_URL+'?v='+Date.now(),{cache:'no-store'});
+   if(!response.ok){
+    response=await fetch('https://raw.githubusercontent.com/skhouseconstruction-hue/mapa-zonas-ppam-tij/main/data.json?v='+Date.now(),{cache:'no-store'});
+   }
+   if(!response.ok)throw new Error('No se pudo leer data.json ('+response.status+').');
    const data=await response.json();
    const points=Array.isArray(data.points)?data.points:[];
    const shelters=Array.isArray(data.shelters)?data.shelters:[];
@@ -139,7 +142,7 @@ html,body{margin:0;width:100%;min-height:100%;font-family:Arial,Helvetica,sans-s
    renderPins({...data,points,shelters,events});
    status.textContent='Datos actualizados · '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
   }catch(error){
-   status.textContent='No se pudieron consultar los datos compartidos. El mapa sigue disponible.';
+   status.textContent='No se pudieron cargar las ubicaciones: '+(error&&error.message?error.message:'error de conexión');
   }
  }
  updatePanel();
