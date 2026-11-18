@@ -115,7 +115,7 @@ body.admin-mode .map-hint{display:none!important}
       <button class="tab" data-tab="events" type="button">Eventos</button>
       <button class="tab tab-about" data-tab="about" type="button">Acerca de</button>
       <button id="publishHtml" class="primary publish-tab" type="button">Generar HTML actualizado para SAFI</button>
-      <button id="generateDiv" class="publish-tab" type="button">Generar DIV PPAM-TIJ</button>
+      <button class="tab" data-tab="mapdiv" type="button">Mapa DIV</button>
           </nav>
     <section class="panel" id="zonesPanel" tabindex="0" aria-label="Lista de zonas; usa la rueda, la barra o las flechas para desplazarte">
       <div class="row between"><h3>Zonas registradas</h3><button class="primary" id="addZone">＋ Agregar zona</button></div>
@@ -128,6 +128,15 @@ body.admin-mode .map-hint{display:none!important}
       <div id="sheltersList"></div>
     </section>
     <section class="panel hidden" id="eventsPanel" tabindex="0" aria-label="Eventos registrados"><div class="row between"><h3>Eventos registrados</h3><button class="primary" id="addEvent">＋ Agregar evento</button></div><div class="muted">Direcciones y ubicaciones de eventos. Selecciona uno para verlo en el mapa.</div><div id="eventsList"></div></section>
+    <section class="panel hidden" id="mapDivPanel" tabindex="0" aria-label="Mapa DIV PPAM-TIJ">
+      <div class="row between" style="align-items:center;gap:12px;flex-wrap:wrap">
+        <div><h3 style="margin:0">Mapa DIV PPAM-TIJ</h3><div class="muted">Vista previa del panel que puedes insertar en SAFI.</div></div>
+        <button id="generateDiv" class="primary" type="button">Generar código DIV</button>
+      </div>
+      <div style="margin-top:12px;border:1px solid #dce4ef;border-radius:12px;overflow:hidden;background:#f5f8fc">
+        <iframe src="https://skhouseconstruction-hue.github.io/mapa-zonas-ppam-tij/panel-usuarios.html" title="Vista previa del mapa DIV PPAM-TIJ" style="display:block;width:100%;height:720px;border:0;background:#fff" loading="lazy"></iframe>
+      </div>
+    </section>
     <section class="panel hidden" id="aboutPanel" tabindex="0" aria-label="Información del mapa; usa la rueda, la barra o las flechas para desplazarte">
       <h3>Cómo usar el mapa</h3>
       <div class="card"><strong>1. Agrega una zona</strong><p class="muted">Pulsa “Agregar zona”, mueve el pin al lugar exacto y confirma la ubicación.</p></div>
@@ -513,6 +522,7 @@ function setTab(tab){
  $('aboutPanel').classList.toggle('hidden',tab!=='about');
  $('sheltersPanel').classList.toggle('hidden',tab!=='shelters');
  $('eventsPanel').classList.toggle('hidden',tab!=='events');
+ $('mapDivPanel').classList.toggle('hidden',tab!=='mapdiv');
 }
 function configureMode(){
  document.body.classList.toggle('admin-mode',ADMIN_MODE);
