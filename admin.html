@@ -536,6 +536,7 @@ async function connectGoogleMaps(){
 $('googleApiKey').value=GOOGLE_MAPS_API_KEY;
 $('connectGoogle').addEventListener('click',connectGoogleMaps);
 function setTab(tab){
+ document.body.classList.toggle('workspace-div-active',tab==='mapdiv');
  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
  $('zonesPanel').classList.toggle('hidden',tab!=='zones');
  $('aboutPanel').classList.toggle('hidden',tab!=='about');
