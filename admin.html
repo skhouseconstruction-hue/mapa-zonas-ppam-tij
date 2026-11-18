@@ -958,7 +958,6 @@ $('copyDiv').onclick=async()=>{
 document.querySelectorAll('[data-workspace="main"]').forEach(b=>b.addEventListener('click',()=>{setTab('zones');updateWorkspaceButtons('main');}));
 document.querySelectorAll('[data-workspace="div"]').forEach(b=>b.addEventListener('click',()=>{setTab('mapdiv');updateWorkspaceButtons('div');}));
 function updateWorkspaceButtons(which){document.querySelectorAll('.workspace-button').forEach(b=>b.classList.toggle('active',b.dataset.workspace===which));}
-$('closeMapDiv').onclick=()=>{setTab('zones');updateWorkspaceButtons('main');};
 $('safiAddressTab').onclick=()=>setSafiTab('address');
 $('safiDownloadTab').onclick=()=>setSafiTab('download');
 $('closeSafi').onclick=()=>$('safiBack').classList.add('hidden');
