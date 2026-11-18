@@ -101,7 +101,34 @@ html,body{margin:0;width:100%;min-height:100%;font-family:Arial,Helvetica,sans-s
  updateStats();
  setInterval(updateStats,15000);
  const liveMap=document.getElementById('ppam-live-map');
- if(liveMap){setInterval(function(){try{liveMap.contentWindow.location.reload();}catch(e){liveMap.src='./safi.html?actualizacion='+Date.now();}},30000);}
+ function simplifyDivMap(){
+  try{
+   const doc=liveMap.contentDocument;
+   if(!doc)return;
+   if(!doc.getElementById('ppam-div-hide-map-controls')){
+    const style=doc.createElement('style');
+    style.id='ppam-div-hide-map-controls';
+    style.textContent=[
+     '.gm-style-mtc{display:none!important}',
+     'button[aria-label*="mi ubicación" i],button[title*="mi ubicación" i],button[aria-label*="my location" i],button[title*="my location" i]{display:none!important}',
+     'button[aria-label*="buscar" i],button[title*="buscar" i],button[aria-label*="search" i],button[title*="search" i]{display:none!important}',
+     '[role="button"][aria-label*="mi ubicación" i],[role="button"][aria-label*="my location" i],[role="button"][aria-label*="buscar" i],[role="button"][aria-label*="search" i]{display:none!important}'
+    ].join('');
+    doc.head.appendChild(style);
+   }
+   doc.querySelectorAll('button,[role="button"]').forEach(el=>{
+    const label=((el.getAttribute('aria-label')||'')+' '+(el.getAttribute('title')||'')+' '+(el.innerText||el.textContent||'')).trim().toLocaleLowerCase('es');
+    if(label==='buscar'||label==='search'||label==='mi ubicación'||label==='my location'||label.includes('buscar en este mapa')||label.includes('search this area')){
+     el.style.setProperty('display','none','important');
+    }
+   });
+  }catch(e){/* El iframe conserva el mapa aunque el navegador no permita ajustar controles. */}
+ }
+ if(liveMap){
+  liveMap.addEventListener('load',simplifyDivMap);
+  if(liveMap.contentDocument&&liveMap.contentDocument.readyState==='complete')simplifyDivMap();
+  setInterval(function(){try{liveMap.contentWindow.location.reload();}catch(e){liveMap.src='./safi.html?actualizacion='+Date.now();}},30000);
+ }
 })();
 </script>
 </body>
