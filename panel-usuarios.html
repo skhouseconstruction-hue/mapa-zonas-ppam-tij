@@ -32,14 +32,14 @@ html,body{margin:0;width:100%;min-height:100%;font-family:Arial,Helvetica,sans-s
 .ppam-map img{display:block;width:100%;height:auto;object-fit:contain;background:#fff}
 .ppam-map-stage{position:relative;width:100%;line-height:0}
 .ppam-pins{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.ppam-pin{position:absolute;transform:translate(-50%,-100%);width:24px;height:32px;padding:0;border:0;background:transparent;pointer-events:auto;cursor:pointer;line-height:1;filter:drop-shadow(0 0 4px #39ff14)}
-.ppam-pin:before{content:"";position:absolute;left:4px;top:1px;width:16px;height:16px;border:3px solid #f7fff0;border-radius:50% 50% 50% 0;background:#39ff14;box-shadow:0 0 7px #39ff14,0 0 15px #39ff14,0 0 25px #39ff14;transform:rotate(-45deg)}
+.ppam-pin{position:absolute;transform:translate(-50%,-100%);width:24px;height:32px;padding:0;border:0;background:transparent;pointer-events:auto;cursor:pointer;line-height:1;filter:drop-shadow(0 0 4px #ff2bd6)}
+.ppam-pin:before{content:"";position:absolute;left:4px;top:1px;width:16px;height:16px;border:3px solid #f7fff0;border-radius:50% 50% 50% 0;background:#ff2bd6;box-shadow:0 0 7px #ff2bd6,0 0 15px #ff2bd6,0 0 25px #ff2bd6;transform:rotate(-45deg)}
 .ppam-pin:after{content:"";position:absolute;left:10px;top:7px;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 5px #fff}
 .ppam-pin span{position:absolute;left:50%;bottom:31px;transform:translateX(-50%);display:none;white-space:nowrap;max-width:190px;overflow:hidden;text-overflow:ellipsis;padding:5px 8px;border-radius:7px;background:#102e5b;color:#fff;font:700 11px Arial,sans-serif;line-height:1.2;box-shadow:0 2px 9px #0004}
 .ppam-pin:focus-visible span,.ppam-pin:hover span{display:block}
 .ppam-pin:focus-visible{outline:2px solid #102e5b;outline-offset:4px;border-radius:50%}
 .ppam-pin.pulse{animation:ppamPinPulse 2s infinite}
-@keyframes ppamPinPulse{0%,100%{filter:drop-shadow(0 0 3px #39ff14)}50%{filter:drop-shadow(0 0 10px #39ff14) drop-shadow(0 0 16px #39ff14)}}
+@keyframes ppamPinPulse{0%,100%{filter:drop-shadow(0 0 3px #ff2bd6)}50%{filter:drop-shadow(0 0 10px #ff2bd6) drop-shadow(0 0 16px #ff2bd6)}}
 @media(prefers-reduced-motion:reduce){.ppam-pin.pulse{animation:none}}
 .ppam-info{display:flex;align-items:center;gap:12px;margin-top:14px;padding:14px 17px;border-radius:10px;background:#eaf2fc;color:#19365e;font-size:clamp(13px,1.7vw,17px);line-height:1.4}
 .ppam-info-icon{display:grid;place-items:center;width:32px;height:32px;flex:none;border-radius:50%;background:#2474c9;color:#fff;font-weight:800;font-size:20px}
