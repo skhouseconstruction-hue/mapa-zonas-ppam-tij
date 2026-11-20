@@ -275,6 +275,48 @@ body.workspace-div-active .map-tools,body.workspace-div-active #searchPanel{disp
 'use strict';
 const $ = id => document.getElementById(id);
 const KEY='mapa_personalizado_admin_draft_v2';
+const DRAFT_DB='ppam_tij_admin_drafts_v1';
+const DRAFT_STORE='drafts';
+function openDraftDB(){
+ return new Promise((resolve,reject)=>{
+  if(!('indexedDB' in window)){reject(new Error('Este navegador no permite almacenamiento local ampliado.'));return}
+  const request=indexedDB.open(DRAFT_DB,1);
+  request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains(DRAFT_STORE))db.createObjectStore(DRAFT_STORE,{keyPath:'id'});};
+  request.onsuccess=()=>resolve(request.result);
+  request.onerror=()=>reject(request.error||new Error('No se pudo abrir el almacenamiento local.'));
+ });
+}
+async function writeDraftRecord(data){
+ const db=await openDraftDB();
+ try{
+  await new Promise((resolve,reject)=>{
+   const tx=db.transaction(DRAFT_STORE,'readwrite');
+   tx.objectStore(DRAFT_STORE).put({id:'current',data,updatedAt:Date.now()});
+   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('No se pudo guardar el respaldo local.'));
+   tx.onabort=()=>reject(tx.error||new Error('Se canceló el respaldo local.'));
+  });
+ }finally{db.close()}
+}
+async function saveLocalDraft(){return writeDraftRecord(state)}
+async function loadLocalDraft(){
+ const db=await openDraftDB();
+ try{
+  const saved=await new Promise((resolve,reject)=>{
+   const tx=db.transaction(DRAFT_STORE,'readonly'),request=tx.objectStore(DRAFT_STORE).get('current');
+   request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>reject(request.error);
+  });
+  if(saved&&validData(saved.data))return saved.data;
+ }finally{db.close()}
+ // Migra el borrador antiguo solo si IndexedDB todavía no contiene uno.
+ try{
+  const legacy=localStorage.getItem(KEY);
+  if(legacy){
+   const parsed=JSON.parse(legacy);
+   if(validData(parsed)){await writeDraftRecord(parsed);localStorage.removeItem(KEY);return parsed;}
+  }
+ }catch(error){console.warn('No se pudo migrar el borrador antiguo:',error)}
+ return null;
+}
 const ADMIN_MODE=true; // Archivo privado de administración; no subir este archivo a la aplicación pública.
 const GOOGLE_KEY_STORAGE='mapa_google_maps_api_key';
 let GOOGLE_MAPS_API_KEY=localStorage.getItem(GOOGLE_KEY_STORAGE)||'';
@@ -304,13 +346,13 @@ async function refreshSharedFromGitHub(silent=false){
    const parsed=await decodeGitHubFile(remote,githubToken(),'sincronizar');
    state={...state,...parsed,shelters:Array.isArray(parsed.shelters)?parsed.shelters:[],events:Array.isArray(parsed.events)?parsed.events:[]};
    githubDataSha=remote.sha;githubLastSyncedState=sharedSnapshot();
-   try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}
+   try{await saveLocalDraft()}catch(e){console.warn('No se pudo actualizar el respaldo local:',e)}
    refresh();setGithubStatus('Actualizado desde otro dispositivo ✓',true);
   }else if(!githubDataSha){
    const parsed=await decodeGitHubFile(remote,githubToken(),'sincronizar');
    state={...state,...parsed,shelters:Array.isArray(parsed.shelters)?parsed.shelters:[],events:Array.isArray(parsed.events)?parsed.events:[]};
    githubDataSha=remote.sha;githubLastSyncedState=sharedSnapshot();
-   try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}
+   try{await saveLocalDraft()}catch(e){console.warn('No se pudo actualizar el respaldo local:',e)}
    refresh();setGithubStatus('Conectado y sincronizado con GitHub ✓',true);
   }else if(!silent){setGithubStatus('Conexión activa. Ya tienes la versión más reciente ✓',true)}
  }catch(e){
@@ -374,10 +416,12 @@ async function load(){
  try{
   const embedded=JSON.parse($('publishedData').textContent||'{}');
   if(validData(embedded))state={...state,...embedded,shelters:Array.isArray(embedded.shelters)?embedded.shelters:[],events:Array.isArray(embedded.events)?embedded.events:[]};
-  try{await loadSharedData()}catch(e){console.warn('Se usará la copia incluida mientras data.json no esté disponible:',e)}
-  // Los datos compartidos de GitHub son la fuente principal. El borrador local
-  // se conserva como respaldo en localStorage, pero nunca sustituye automáticamente
-  // los datos compartidos ni muestra una pregunta al abrir el panel.
+  try{await loadSharedData()}catch(e){
+   console.warn('No se pudo consultar data.json; se intentará recuperar el respaldo local:',e);
+   try{const draft=await loadLocalDraft();if(draft&&validData(draft))state={...state,...draft,shelters:Array.isArray(draft.shelters)?draft.shelters:[],events:Array.isArray(draft.events)?draft.events:[]};}
+   catch(localError){console.warn('No se pudo recuperar el respaldo local:',localError)}
+  }
+  // GitHub/data.json es la fuente principal. IndexedDB conserva el respaldo local sin consumir la cuota pequeña de localStorage.
  }catch(e){console.warn('No se pudo cargar el mapa:',e)}
 }
 async function pushSharedData(){
@@ -410,12 +454,16 @@ async function pushSharedData(){
 }
 function save(){
  if(!ADMIN_MODE)return;
- try{localStorage.setItem(KEY,JSON.stringify(state));}
- catch(e){alert('No se pudo guardar el borrador en este navegador. Usa fotografías más pequeñas.')}
+ saveLocalDraft().then(()=>{
+  if(!githubToken())setGithubStatus('Respaldo local guardado. Conecta GitHub para compartir los cambios.');
+ }).catch(error=>{
+  console.warn('No se pudo guardar el respaldo local ampliado:',error);
+  if(!githubToken())setGithubStatus('No se pudo guardar el respaldo local. Conecta GitHub para proteger los cambios.');
+ });
  if(githubToken()){
   setGithubStatus('Guardando cambios en GitHub…');
   clearTimeout(githubWriteTimer);githubWriteTimer=setTimeout(pushSharedData,1200);
- }else setGithubStatus('Guardado local. Conecta GitHub para compartir los cambios.');
+ }else setGithubStatus('Guardando respaldo local…');
 }
 async function connectGitHub(){
  const entered=prompt('Pega tu token Fine-grained de GitHub. Debe tener acceso únicamente al repositorio mapa-zonas-ppam-tij y permiso Contents: Read and write. No lo compartas por chat.');
