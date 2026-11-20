@@ -112,7 +112,7 @@ html,body{margin:0;width:100%;min-height:100%;font-family:Arial,Helvetica,sans-s
   const records=[
    ...(Array.isArray(data.points)?data.points.map(x=>({...x,_type:'Zona'})):[]),
    ...(Array.isArray(data.shelters)?data.shelters.map(x=>({...x,_type:'Resguardo'})):[]),
-   ...(Array.isArray(data.events)?data.events.map(x=>({...x,_type:'Evento'})):[]
+   ...(Array.isArray(data.events)?data.events.map(x=>({...x,_type:'Evento'})):[])
   ];
   layer.replaceChildren();
   records.filter(validCoords).forEach(item=>layer.appendChild(makePin(item,item._type)));
