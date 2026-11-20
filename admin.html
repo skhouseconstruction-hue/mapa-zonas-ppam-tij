@@ -162,7 +162,7 @@ body.workspace-div-active .map-tools,body.workspace-div-active #searchPanel{disp
         </div>
       </div>
       <div class="mapdiv-frame-wrap">
-        <iframe src="https://skhouseconstruction-hue.github.io/mapa-zonas-ppam-tij/panel-usuarios.html" title="Vista previa del mapa DIV PPAM-TIJ" loading="eager" allowfullscreen></iframe>
+        <iframe src="https://skhouseconstruction-hue.github.io/mapa-zonas-ppam-tij/panel-usuarios.html?v=20261119-event-dates-2" title="Vista previa del mapa DIV PPAM-TIJ" loading="eager" allowfullscreen></iframe>
       </div>
     </section>
     <section class="panel hidden" id="aboutPanel" tabindex="0" aria-label="Información del mapa; usa la rueda, la barra o las flechas para desplazarte">
@@ -657,8 +657,10 @@ function renderShelters(){
  </div>`).join('');
 }
 function eventWithinDateWindow(p,now=new Date()){
- if(p?.startDate){const start=new Date(p.startDate+'T00:00:00');if(now<start)return false;}
- if(p?.endDate){const end=new Date(p.endDate+'T23:59:59.999');if(now>end)return false;}
+ const today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+ const start=String(p?.startDate||'').slice(0,10),end=String(p?.endDate||'').slice(0,10);
+ if(start&&today<start)return false;
+ if(end&&today>end)return false;
  return true;
 }
 function eventIsPublished(p){return !!(p&&p.published!==false&&eventWithinDateWindow(p))}
@@ -1000,7 +1002,7 @@ $('publishHtml').onclick=()=>{
  $('safiBack').classList.remove('hidden');
 };
 function buildDivCode(){
- const panelUrl='https://skhouseconstruction-hue.github.io/mapa-zonas-ppam-tij/panel-usuarios.html';
+ const panelUrl='https://skhouseconstruction-hue.github.io/mapa-zonas-ppam-tij/panel-usuarios.html?v=20261119-event-dates-2';
  const mobileHeight=Number($('divHeight').value)||320;
  const code='<div id="ppam-panel-usuarios" style="display:block;width:100%;margin:0;padding:0;box-sizing:border-box;line-height:0;">'
  +'<style>@media(max-width:700px){#ppam-panel-usuarios iframe{height:'+mobileHeight+'px!important}}@media(min-width:701px){#ppam-panel-usuarios iframe{height:240px!important}}</style>'
