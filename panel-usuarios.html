@@ -85,7 +85,18 @@ html,body{margin:0;width:100%;min-height:100%;font-family:Arial,Helvetica,sans-s
 <script>
 (function(){
  'use strict';
- const DATA_URL='./data.json';
+ const DATA_URL='https://raw.githubusercontent.com/skhouseconstruction-hue/mapa-zonas-ppam-tij/main/data.json';
+ const DATA_FALLBACK='https://skhouseconstruction-hue.github.io/mapa-zonas-ppam-tij/data.json';
+ let panelLoading=false;
+ async function fetchPanelJson(url){
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),45000);
+  try{
+   const response=await fetch(url+'?v='+Date.now(),{cache:'no-store',signal:controller.signal});
+   if(!response.ok)throw new Error('HTTP '+response.status);
+   return await response.json();
+  }finally{clearTimeout(timeout)}
+ }
  const bounds={minLat:32.32,maxLat:32.59,minLng:-117.15,maxLng:-116.80};
  function validCoords(item){
   if(!item||item.lat===null||item.lng===null||item.lat===undefined||item.lng===undefined||String(item.lat).trim()===''||String(item.lng).trim()==='')return false;
@@ -118,17 +129,16 @@ html,body{margin:0;width:100%;min-height:100%;font-family:Arial,Helvetica,sans-s
   records.filter(validCoords).forEach(item=>layer.appendChild(makePin(item,item._type)));
  }
  async function updatePanel(){
+  if(panelLoading)return;
+  panelLoading=true;
   const status=document.getElementById('ppam-status');
   try{
-   let response;
+   let data;
    try{
-    response=await fetch(DATA_URL+'?v='+Date.now(),{cache:'no-store'});
-    if(!response.ok)throw new Error('HTTP '+response.status);
+    data=await fetchPanelJson(DATA_URL);
    }catch(primaryError){
-    response=await fetch('https://raw.githubusercontent.com/skhouseconstruction-hue/mapa-zonas-ppam-tij/main/data.json?v='+Date.now(),{cache:'no-store'});
+    data=await fetchPanelJson(DATA_FALLBACK);
    }
-   if(!response.ok)throw new Error('No se pudo leer data.json ('+response.status+').');
-   const data=await response.json();
    const points=Array.isArray(data.points)?data.points:[];
    const shelters=Array.isArray(data.shelters)?data.shelters:[];
    const events=Array.isArray(data.events)?data.events:[];
@@ -138,7 +148,9 @@ html,body{margin:0;width:100%;min-height:100%;font-family:Arial,Helvetica,sans-s
    renderPins({...data,points,shelters,events});
    status.textContent='Datos actualizados · '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
   }catch(error){
-   status.textContent='No se pudieron cargar las ubicaciones: '+(error&&error.message?error.message:'error de conexión');
+   status.textContent='No se pudieron cargar los datos: '+(error&&error.name==='AbortError'?'tiempo de espera agotado':(error&&error.message?error.message:'error de conexión'));
+  }finally{
+   panelLoading=false;
   }
  }
  updatePanel();
