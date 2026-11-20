@@ -140,7 +140,13 @@ html,body{margin:0;width:100%;min-height:100%;font-family:Arial,Helvetica,sans-s
    }
    const points=Array.isArray(data.points)?data.points:[];
    const shelters=Array.isArray(data.shelters)?data.shelters:[];
-   const events=Array.isArray(data.events)?data.events.filter(x=>x.published!==false):[];
+   const now=new Date();
+   const events=Array.isArray(data.events)?data.events.filter(x=>{
+    if(x.published===false)return false;
+    if(x.startDate&&now<new Date(x.startDate+'T00:00:00'))return false;
+    if(x.endDate&&now>new Date(x.endDate+'T23:59:59.999'))return false;
+    return true;
+   }):[];
    document.getElementById('ppam-zones').textContent=String(points.length);
    document.getElementById('ppam-locations').textContent=String(shelters.length);
    document.getElementById('ppam-events').textContent=String(events.length);
