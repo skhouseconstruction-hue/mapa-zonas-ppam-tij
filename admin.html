@@ -390,10 +390,15 @@ async function pushSharedData(){
   if(!githubDataSha)throw new Error('No se ha establecido la versión base de GitHub. Vuelve a conectar GitHub antes de publicar.');
   if(current.sha!==githubDataSha)throw new Error('Otro administrador publicó cambios desde que abriste este panel. Para proteger sus datos, no se sobrescribió nada. Recarga el panel y vuelve a aplicar tus cambios.');
   const content=JSON.stringify(state,null,2);
+  // Guarda la fotografía exacta de los datos enviados para reconocerlos como sincronizados al confirmar GitHub.
+  const syncedSnapshot=sharedSnapshot();
   const put=await fetch(url,{method:'PUT',headers:githubHeaders(token),body:JSON.stringify({message:'Actualizar datos del mapa PPAM-TIJ',content:encodeGithubContent(content),sha:current.sha,branch:GITHUB_BRANCH})});
   if(put.status===409||put.status===422)throw new Error('GitHub detectó un cambio simultáneo. Recarga los datos compartidos antes de volver a publicar para no sobrescribir cambios.');
   if(!put.ok){const detail=await readGitHubJson(put,'publicar los cambios').catch(()=>({}));throw new Error(detail.message||'No se pudieron publicar los cambios ('+put.status+').')}
-  const result=await readGitHubJson(put,'confirmar la publicación');githubDataSha=result.content?.sha||null;
+  const result=await readGitHubJson(put,'confirmar la publicación');
+  if(!result.content?.sha)throw new Error('GitHub publicó los datos, pero no devolvió la versión del archivo. Se verificará de nuevo antes de aceptar cambios externos.');
+  githubDataSha=result.content.sha;
+  githubLastSyncedState=syncedSnapshot;
   setGithubStatus('Sincronizado con GitHub ✓',true);
  }catch(e){setGithubStatus('Pendiente: '+e.message);console.error(e)}
  finally{
