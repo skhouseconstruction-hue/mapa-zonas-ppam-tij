@@ -257,6 +257,7 @@ body.workspace-div-active .map-tools,body.workspace-div-active #searchPanel{disp
  <div class="modal">
   <h3>DIV PPAM-TIJ · Diseño de referencia</h3>
   <p class="muted">Este bloque inserta el panel visual PPAM-TIJ arriba del mapa original de voluntarios. No reemplaces el contenido completo de SAFI; conserva el mapa original debajo.</p>
+  <div class="field"><label for="divHeight">Ajustar altura del panel en celular: <strong id="divHeightValue">320 px</strong></label><input id="divHeight" type="range" min="240" max="440" step="10" value="320" style="width:100%"></div>
   <div class="field"><label for="divCode">Código DIV para SAFI → Fuente HTML</label><textarea id="divCode" rows="7" readonly></textarea></div>
   <div class="muted" style="margin-top:8px">El panel carga las estadísticas de data.json y el mapa público con sus ubicaciones. Las zonas coloreadas solo se dibujarán cuando existan límites geográficos (polígonos) registrados para ellas; no se inventarán límites.</div>
   <div class="modal-actions"><button id="closeDiv">Cerrar</button><button class="primary" id="copyDiv">Copiar código DIV</button></div>
@@ -938,13 +939,22 @@ $('publishHtml').onclick=()=>{
  setSafiTab('address');
  $('safiBack').classList.remove('hidden');
 };
-$('generateDiv').onclick=()=>{
- if(!ADMIN_MODE)return;
+function buildDivCode(){
  const panelUrl='https://skhouseconstruction-hue.github.io/mapa-zonas-ppam-tij/panel-usuarios.html';
- const code='<div id="ppam-panel-usuarios" style="display:block;width:100%;margin:0 0 14px;padding:0;box-sizing:border-box;">'
- +'<iframe src="'+panelUrl+'" title="PPAM-TIJ - Zonas, ubicaciones, eventos y mapa de Tijuana" width="100%" height="690" style="display:block;width:100%;height:690px;min-height:520px;border:0;border-radius:14px;background:#fff;" loading="lazy" allowfullscreen></iframe>'
+ const mobileHeight=Number($('divHeight').value)||320;
+ const code='<div id="ppam-panel-usuarios" style="display:block;width:100%;margin:0;padding:0;box-sizing:border-box;line-height:0;">'
+ +'<style>@media(max-width:700px){#ppam-panel-usuarios iframe{height:'+mobileHeight+'px!important}}@media(min-width:701px){#ppam-panel-usuarios iframe{height:240px!important}}</style>'
+ +'<iframe src="'+panelUrl+'" title="PPAM-TIJ - Zonas, ubicaciones y eventos" width="100%" height="'+mobileHeight+'" style="display:block;width:100%;height:'+mobileHeight+'px;min-height:0;margin:0;padding:0;border:0;border-radius:14px;background:#fff;vertical-align:top;" loading="lazy" allowfullscreen></iframe>'
  +'</div>';
  $('divCode').value=code;
+}
+$('divHeight').addEventListener('input',()=>{
+ $('divHeightValue').textContent=$('divHeight').value+' px';
+ buildDivCode();
+});
+$('generateDiv').onclick=()=>{
+ if(!ADMIN_MODE)return;
+ buildDivCode();
  $('divBack').classList.remove('hidden');
 };
 $('closeDiv').onclick=()=>$('divBack').classList.add('hidden');
