@@ -407,7 +407,7 @@ async function decodeGitHubFile(remote,token,action){
  }
 }
 async function loadSharedData(){
- const response=await fetch('./data.json?ts='+Date.now(),{cache:'no-store'});
+ const response=await fetch('./data.json',{cache:'no-cache'});
  if(!response.ok)throw new Error('No se pudo consultar data.json');
  const data=await response.json();if(!validData(data))throw new Error('El archivo compartido no tiene un formato válido');
  state={...state,...data,shelters:Array.isArray(data.shelters)?data.shelters:[],events:Array.isArray(data.events)?data.events:[]};
@@ -982,7 +982,11 @@ function setSafiTab(tab){
 function buildUpdatedPublicHtml(){
  const clone=document.documentElement.cloneNode(true);
  const dataTag=clone.querySelector('#publishedData');
- dataTag.textContent=JSON.stringify({...state,events:(state.events||[]).filter(eventIsPublished)}).replace(/</g,'\\u003c');
+ const publicData={...state,events:(state.events||[]).filter(eventIsPublished)};
+ ['routes','points','shelters','events'].forEach(key=>{
+  if(Array.isArray(publicData[key]))publicData[key]=publicData[key].map(item=>({...item,photo:typeof item.photo==='string'&&item.photo.startsWith('data:image/')?null:item.photo}));
+ });
+ dataTag.textContent=JSON.stringify(publicData).replace(/</g,'\\u003c');
  const appScript=[...clone.querySelectorAll('script')].pop();
  appScript.textContent=appScript.textContent
   .replace('const ADMIN_MODE=true; // Archivo privado de administración; no subir este archivo a la aplicación pública.','const ADMIN_MODE=false; // Modo de consulta para usuarios.')
