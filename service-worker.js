@@ -1,9 +1,12 @@
 'use strict';
 
 // v40: prioriza siempre la versión publicada y conserva una copia para uso sin conexión.
-const CACHE_NAME='ppam-tij-admin-v41';
+const CACHE_NAME='ppam-tij-map-v42';
 const APP_FILES=[
   './admin.html',
+  './safi.html',
+  './panel-usuarios.html',
+  './index.html',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
@@ -52,8 +55,12 @@ self.addEventListener('fetch',event=>{
   // Los datos compartidos siempre se solicitan a la red; la copia local es solo respaldo.
   if(url.pathname.endsWith('/data.json')){
     event.respondWith(
-      fetch(new Request(request,{cache:'no-store'}))
-        .catch(()=>caches.match(request))
+      fetch(new Request(request,{cache:'no-cache'}))
+        .then(response=>saveInCache(request,response))
+        .catch(async()=>{
+          const cached=await caches.match(request);
+          return cached || Response.error();
+        })
     );
     return;
   }
