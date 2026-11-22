@@ -1,7 +1,7 @@
 'use strict';
 
-// v40: prioriza siempre la versión publicada y conserva una copia para uso sin conexión.
-const CACHE_NAME='ppam-tij-map-v42';
+// v43: optimiza la sincronización y conserva una copia para uso sin conexión.
+const CACHE_NAME='ppam-tij-map-v43';
 const APP_FILES=[
   './admin.html',
   './safi.html',
