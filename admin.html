@@ -416,12 +416,20 @@ async function load(){
  try{
   const embedded=JSON.parse($('publishedData').textContent||'{}');
   if(validData(embedded))state={...state,...embedded,shelters:Array.isArray(embedded.shelters)?embedded.shelters:[],events:Array.isArray(embedded.events)?embedded.events:[]};
-  try{await loadSharedData()}catch(e){
-   console.warn('No se pudo consultar data.json; se intentará recuperar el respaldo local:',e);
-   try{const draft=await loadLocalDraft();if(draft&&validData(draft))state={...state,...draft,shelters:Array.isArray(draft.shelters)?draft.shelters:[],events:Array.isArray(draft.events)?draft.events:[]};}
-   catch(localError){console.warn('No se pudo recuperar el respaldo local:',localError)}
+  if(ADMIN_MODE){
+   try{await loadSharedData()}catch(e){
+    console.warn('No se pudo consultar data.json; se intentará recuperar el respaldo local:',e);
+    try{const draft=await loadLocalDraft();if(draft&&validData(draft))state={...state,...draft,shelters:Array.isArray(draft.shelters)?draft.shelters:[],events:Array.isArray(draft.events)?draft.events:[]};}
+    catch(localError){console.warn('No se pudo recuperar el respaldo local:',localError)}
+   }
+   // GitHub/data.json es la fuente principal; IndexedDB conserva el respaldo local.
+  }else{
+   // Primero se muestra el mapa con metadatos ligeros; fotos y datos completos llegan en segundo plano.
+   loadSharedData().then(()=>{
+    publicLastSnapshot=publicSnapshot(state);
+    refresh();
+   }).catch(e=>console.warn('No se pudieron actualizar los datos compartidos:',e));
   }
-  // GitHub/data.json es la fuente principal. IndexedDB conserva el respaldo local sin consumir la cuota pequeña de localStorage.
  }catch(e){console.warn('No se pudo cargar el mapa:',e)}
 }
 async function pushSharedData(){
