@@ -199,20 +199,32 @@ function githubToken(){return sessionStorage.getItem(GITHUB_TOKEN_KEY)||''}
 function setGithubStatus(message,ok=false){const el=$('githubStatus');if(el){el.textContent=message;el.style.color=ok?'#bbf7d0':'#fde68a'}}
 function githubHeaders(token){return {'Accept':'application/vnd.github+json','Authorization':'Bearer '+token,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'}}
 function encodeGithubContent(value){return btoa(unescape(encodeURIComponent(value)))}
+let publicDataRevision='';
+function readDataRevision(response){
+ return response.headers.get('ETag')||response.headers.get('Last-Modified')||'';
+}
 async function loadSharedData(){
  const response=await fetch('./data.json',{cache:'no-cache'});
  if(!response.ok)throw new Error('No se pudo consultar data.json');
+ publicDataRevision=readDataRevision(response)||publicDataRevision;
  const data=await response.json();if(!validData(data))throw new Error('El archivo compartido no tiene un formato válido');
  state={...state,...data,shelters:Array.isArray(data.shelters)?data.shelters:[],events:Array.isArray(data.events)?data.events:[]};
 }
 let publicSyncTimer=null,publicSyncBusy=false,publicLastSnapshot='';
 function publicSnapshot(data){return JSON.stringify({name:data.name||'',routes:Array.isArray(data.routes)?data.routes:[],points:Array.isArray(data.points)?data.points:[],shelters:Array.isArray(data.shelters)?data.shelters:[],events:Array.isArray(data.events)?data.events:[]})}
 async function refreshPublicData(){
- if(ADMIN_MODE||publicSyncBusy)return;
+ if(ADMIN_MODE||publicSyncBusy||document.hidden)return;
  publicSyncBusy=true;
  try{
-  const response=await fetch('./data.json',{cache:'no-cache'});
+  let revision='';
+  try{
+   const probe=await fetch('./data.json',{method:'HEAD',cache:'no-store'});
+   if(probe.ok)revision=readDataRevision(probe);
+  }catch(probeError){}
+  if(revision&&publicDataRevision&&revision===publicDataRevision)return;
+  const response=await fetch('./data.json',{cache:'no-store'});
   if(!response.ok)throw new Error('HTTP '+response.status);
+  const nextRevision=readDataRevision(response);
   const data=await response.json();
   if(!validData(data))throw new Error('Datos compartidos no válidos');
   const snapshot=publicSnapshot(data);
@@ -221,6 +233,7 @@ async function refreshPublicData(){
    publicLastSnapshot=snapshot;
    refresh();
   }
+  if(nextRevision)publicDataRevision=nextRevision;
  }catch(e){console.warn('No se pudo actualizar el mapa público:',e)}
  finally{publicSyncBusy=false}
 }
@@ -228,7 +241,7 @@ function startPublicAutoRefresh(){
  if(ADMIN_MODE)return;
  publicLastSnapshot=publicSnapshot(state);
  clearInterval(publicSyncTimer);
- publicSyncTimer=setInterval(refreshPublicData,10000);
+ publicSyncTimer=setInterval(refreshPublicData,15000);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshPublicData()});
 }
 async function load(){
