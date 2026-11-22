@@ -84,14 +84,14 @@ html,body{margin:0;width:100%;min-height:100%;font-family:Arial,Helvetica,sans-s
 <script>
 (function(){
  'use strict';
- const DATA_URL='https://raw.githubusercontent.com/skhouseconstruction-hue/mapa-zonas-ppam-tij/main/data.json';
- const DATA_FALLBACK='https://skhouseconstruction-hue.github.io/mapa-zonas-ppam-tij/data.json';
+ const DATA_URL='https://skhouseconstruction-hue.github.io/mapa-zonas-ppam-tij/data.json';
+ const DATA_FALLBACK='https://raw.githubusercontent.com/skhouseconstruction-hue/mapa-zonas-ppam-tij/main/data.json';
  let panelLoading=false;
  async function fetchPanelJson(url){
   const controller=new AbortController();
   const timeout=setTimeout(()=>controller.abort(),45000);
   try{
-   const response=await fetch(url+'?v='+Date.now(),{cache:'no-store',signal:controller.signal});
+   const response=await fetch(url,{cache:'no-cache',signal:controller.signal});
    if(!response.ok)throw new Error('HTTP '+response.status);
    return await response.json();
   }finally{clearTimeout(timeout)}
@@ -165,5 +165,12 @@ html,body{margin:0;width:100%;min-height:100%;font-family:Arial,Helvetica,sans-s
  setInterval(updatePanel,15000);
 })();
 </script>
+
+<script>
+if('serviceWorker' in navigator){
+ window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'}).catch(()=>{}));
+}
+</script>
+
 </body>
 </html>
